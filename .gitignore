@@ -1,0 +1,10 @@
+.gradle/
+build/
+backend/.gradle/
+backend/build/
+backend/.tamizaje-demo/
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/.railway/
+*.log

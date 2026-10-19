@@ -1,0 +1,8 @@
+.gradle/
+build/
+.tamizaje-demo/
+*.log
+.env
+.env.*
+!.env.example
+.railway/

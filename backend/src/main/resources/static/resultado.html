@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#4b0d1f" />
+    <title>Consulta de tamizaje</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/app.css?v=20261019-result-measurements" />
+  </head>
+  <body class="public-result-page">
+    <main class="public-result-card" aria-labelledby="public-title">
+      <header class="public-result-brand"><span aria-hidden="true">✚</span> Tamizajes</header>
+      <div id="public-loading" class="public-state" role="status">Cargando la consulta…</div>
+      <div id="public-error" class="public-state alert alert-danger" role="alert" hidden>
+        No se pudo consultar este resultado. Verificá que el enlace sea correcto o contactá al centro de salud.
+      </div>
+      <section id="public-content" hidden>
+        <p class="eyebrow">CONSULTA DE TAMIZAJE</p>
+        <h1 id="public-title">Resultado de tu control</h1>
+        <p class="muted">Registro <strong id="public-record"></strong></p>
+        <div id="public-traffic-light" class="public-traffic-light" role="img" aria-label="Semáforo global">
+          <span class="traffic-light-lamp" data-signal="ROJO" aria-label="Rojo"></span>
+          <span class="traffic-light-lamp" data-signal="AMARILLO" aria-label="Amarillo"></span>
+          <span class="traffic-light-lamp" data-signal="VERDE" aria-label="Verde"></span>
+        </div>
+        <div id="public-status" class="public-status" aria-live="polite"></div>
+        <h2 class="public-details-title">Detalle del tamizaje</h2>
+        <dl class="public-details">
+          <div><dt>Puntaje adaptado de riesgo de diabetes</dt><dd id="public-findrisc"></dd></div>
+          <div><dt>Índice de masa corporal</dt><dd id="public-imc"></dd></div>
+          <div><dt>Perímetro de cintura</dt><dd id="public-waist"></dd></div>
+          <div><dt>Presión arterial</dt><dd id="public-pressure"></dd></div>
+          <div><dt>Riesgo cardiovascular</dt><dd id="public-cv"></dd></div>
+        </dl>
+        <p id="public-recommendation" class="public-recommendation"></p>
+        <p class="public-disclaimer">Este tamizaje es orientativo y no reemplaza una consulta ni un diagnóstico profesional.</p>
+      </section>
+      <footer>Centro de salud · Tamizaje preventivo</footer>
+    </main>
+    <script type="module" src="/js/consulta-publica.js?v=20261019-result-measurements"></script>
+  </body>
+</html>

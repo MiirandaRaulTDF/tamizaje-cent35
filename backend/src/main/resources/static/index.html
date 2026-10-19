@@ -1,0 +1,1707 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#4b0d1f" />
+    <meta
+      name="description"
+      content="Registro y seguimiento de evaluaciones de tamizaje en el centro de salud."
+    />
+    <title>Tamizaje · Salud comunitaria</title>
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/app.css?v=20261019-completion-layout" />
+    <style>
+      [v-cloak] {
+        display: none;
+      }
+    </style>
+    <script defer src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <script type="module" src="/js/app.js?v=20261019-family-history"></script>
+  </head>
+  <body>
+    <noscript>
+      <div class="alert alert-warning m-3">
+        Activá JavaScript en tu navegador para utilizar Tamizaje.
+      </div>
+    </noscript>
+    <div id="app" class="app" v-cloak>
+      <a class="skip-link visually-hidden-focusable" href="#main-content"
+        >Ir al contenido principal</a
+      >
+      <aside class="workspace-sidebar">
+        <a class="brand" href="#registro" @click.prevent="startDirectRegistration()">
+          <span class="brand-icon" aria-hidden="true">✚</span>
+          <span>Tamizaje<small>SALUD PREVENTIVA</small></span>
+        </a>
+        <p class="nav-label">ESPACIO DE TRABAJO</p>
+        <nav
+          class="workspace-nav nav nav-pills"
+          aria-label="Secciones de Tamizaje"
+        >
+          <button
+            v-for="section in sections"
+            :key="section.key"
+            type="button"
+            class="nav-link"
+            :class="{ active: page === section.key }"
+            :aria-current="page === section.key ? 'page' : null"
+            :disabled="busy"
+            @click="navigate(section.key)"
+          >
+            <span class="nav-icon" aria-hidden="true">{{ section.icon }}</span>
+            {{ section.title }}
+            <span
+              v-if="page === section.key"
+              class="nav-dot"
+              aria-hidden="true"
+            ></span>
+          </button>
+        </nav>
+        <div class="sidebar-note">
+          <span class="status-dot" aria-hidden="true"></span> Atención
+          preventiva
+          <p>Una evaluación a tiempo<br />hace la diferencia.</p>
+        </div>
+        <div class="sidebar-footer">
+          <span class="avatar" aria-hidden="true">CS</span>
+          <span>Centro de salud<small>Gestión de tamizajes</small></span>
+        </div>
+      </aside>
+
+      <main id="main-content" class="workspace-main">
+        <header class="workspace-header">
+          <span
+            >Centro de salud <span class="divider" aria-hidden="true">/</span>
+            {{ pageTitle }}</span
+          >
+          <span class="header-status"
+            ><span class="status-dot" aria-hidden="true"></span> Salud
+            comunitaria</span
+          >
+          <label class="theme-control">
+            <span>Apariencia</span>
+            <select v-model="theme" class="theme-picker" aria-label="Elegir apariencia">
+              <option value="natural">Natural · verde</option>
+              <option value="ocean">Océano</option>
+              <option value="lavender">Lavanda</option>
+              <option value="gold">Oro</option>
+              <option value="dark">Oscuro</option>
+            </select>
+          </label>
+        </header>
+        <div class="content container-fluid">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">CUIDADO QUE EMPIEZA CON PREVENCIÓN</p>
+              <h1>{{ record ? "Ficha de tamizaje" : pageTitle }}</h1>
+              <p class="muted">
+                {{ record ? "Registro #" + record.id : pageDescription }}
+              </p>
+            </div>
+            <button
+              v-if="!record && page !== 'registro'"
+              type="button"
+              class="btn btn-primary primary"
+              :disabled="busy || loading"
+              @click="page === 'pacientes' ? openModal('paciente') : page === 'equipo' ? openModal('enfermero') : startDirectRegistration()"
+            >
+              <span aria-hidden="true">＋</span>
+              {{ page === "pacientes" ? "Nuevo paciente" : page === "equipo" ? "Agregar integrante" : "Nuevo tamizaje" }}
+            </button>
+          </div>
+
+          <div v-if="loadError" class="alert alert-danger" role="alert">
+            No se pudieron cargar los registros: {{ loadError }}
+            <button
+              type="button"
+              class="btn btn-outline-danger btn-sm ms-2"
+              :disabled="loading || busy"
+              @click="reload()"
+            >
+              Reintentar
+            </button>
+          </div>
+          <div
+            v-if="notice && !directSaved"
+            class="alert alert-success notice d-flex align-items-center gap-2"
+            role="status"
+          >
+            <span aria-hidden="true">✓</span><span>{{ notice }}</span>
+            <button
+              type="button"
+              class="btn-close ms-auto"
+              aria-label="Cerrar aviso"
+              @click="notice = ''"
+            ></button>
+          </div>
+
+          <div v-if="!record && page === 'registro'" class="registration-layout" :class="{ 'registration-layout-saved': directSaved }">
+          <div class="registration-main">
+            <div class="direct-registration">
+            <div v-if="!directSaved" id="direct-wizard" class="direct-wizard">
+                <nav class="direct-step-nav" aria-label="Pasos de la atención">
+                  <ol class="direct-step-list">
+                    <li v-for="(step, index) in directSteps" :key="step.title">
+                      <button type="button" class="direct-step-button" :class="{ active: directStep === index, completed: index < directMaxStep && directStep !== index }" :data-step-index="index" :aria-label="'Paso ' + (index + 1) + ': ' + step.title" :aria-current="directStep === index ? 'step' : null" :disabled="busy || loading || Boolean(loadError) || index > directMaxStep" @click="goToDirectStep(index)">
+                        <span class="direct-step-number" aria-hidden="true">{{ index + 1 }}</span><span class="direct-step-title">{{ step.title }}</span>
+                      </button>
+                    </li>
+                  </ol>
+                </nav>
+                <div id="direct-step-heading" class="direct-step-status" tabindex="-1" aria-live="polite">
+                  <p class="direct-step-counter">Paso {{ directStep + 1 }} de {{ directSteps.length }} <span aria-hidden="true">·</span> <strong>{{ directSteps[directStep].title }}</strong></p>
+                  <p class="muted mb-0">{{ directStepDescription }}</p>
+                </div>
+                <div class="progress direct-progress" role="progressbar" aria-label="Progreso de la atención" :aria-valuenow="directStep + 1" aria-valuemin="0" :aria-valuemax="directSteps.length" :aria-valuetext="'Paso ' + (directStep + 1) + ' de ' + directSteps.length">
+                  <div class="progress-bar" :style="{ width: directProgress * 100 + '%' }"></div>
+                </div>
+                <div v-if="directError" id="direct-error" class="alert alert-danger" role="alert" tabindex="-1">{{ directError }}</div>
+                <form id="direct-registration-form" novalidate @submit.prevent="submitDirectStep()">
+                <fieldset class="direct-fields" :disabled="busy || loading || Boolean(loadError)">
+                  <legend class="visually-hidden">Registrar enfermero, paciente y control de tamizaje</legend>
+
+                  <section v-if="directStep === 0" class="panel card direct-section" aria-labelledby="direct-nurse-heading">
+                    <div class="panel-head card-header nurse-panel-head">
+                      <div>
+                        <h2 id="direct-nurse-heading">Enfermero</h2>
+                        <p class="muted">Registrá al enfermero que realiza esta atención o seleccioná uno existente.</p></div>
+                      <button type="button" class="btn btn-primary add-nurse-button nurse-new-button" @click="openModal('direct-enfermero')">＋ Nuevo</button>
+                    </div>
+                    <div class="card-body detail-panel">
+                      <div class="nurse-picker-row">
+                        
+                        <div class="flex-grow-1">
+                          <label class="form-label" for="direct-nurse-selected">Seleccionar enfermero</label>
+                          <select id="direct-nurse-selected" v-model="directForm.operadorId" class="form-select" required :disabled="!operators.length">
+                            <option value="">{{ operators.length ? 'Elegí un enfermero…' : 'Todavía no hay enfermeros registrados' }}</option>
+                            <option v-for="member in operators" :key="member.id" :value="String(member.id)">{{ member.nombre }} {{ member.apellido }} · {{ label(member.turno) }}</option>
+                          </select>
+                        </div>
+                        
+                      </div>
+                      <p v-if="!operators.length" class="form-text mb-0 mt-2">Agregá al enfermero responsable para poder continuar.</p>
+                    </div>
+                  </section>
+
+                  <section v-if="directStep === 0" class="panel card direct-section" aria-labelledby="direct-patient-heading">
+                    <div class="panel-head card-header">
+                      <div>
+                        <h2 id="direct-patient-heading">Paciente</h2>
+                        <p class="muted">Ingresá los datos del paciente que recibe el control.</p>
+                      </div>
+                    </div>
+                    <div class="card-body detail-panel">
+                      <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="direct-patient-birthdate">Fecha de nacimiento</label>
+                          <input id="direct-patient-birthdate" v-model="directForm.paciente.fechaNacimiento" class="form-control" type="date" required aria-describedby="direct-patient-age-help" />
+                          <p id="direct-patient-age-help" class="form-text mb-0"><span v-if="directPatientAge !== null" class="live-age">Edad actual: <strong>{{ directPatientAge }} años</strong></span></p>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="direct-patient-sex">Sexo</label>
+                          <select id="direct-patient-sex" v-model="directForm.paciente.sexo" class="form-select" required>
+                            <option value="">Seleccionar…</option>
+                            <option v-for="option in sexes" :key="option.value" :value="option.value">{{ option.label }}</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section v-if="directStep === 0" class="panel card direct-section" aria-labelledby="direct-attention-heading">
+                    <div class="panel-head card-header">
+                      <div>
+                        <h2 id="direct-attention-heading">Datos de la atención</h2>
+                        <p class="muted">Registrá al supervisor responsable y confirmá el consentimiento.</p>
+                      </div>
+                    </div>
+                    <div class="card-body detail-panel">
+                      <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="direct-supervisor">Supervisor (opcional)</label>
+                          <input id="direct-supervisor" v-model.trim="directForm.supervisor" class="form-control" type="text" maxlength="120" placeholder="Nombre y apellido del supervisor" />
+                        </div>
+                      </div>
+                      <div class="form-check direct-consent mt-3">
+                        <input id="direct-consent" v-model="directForm.consent" class="form-check-input" type="checkbox" required />
+                        <label class="form-check-label" for="direct-consent">El paciente acepta participar en el tamizaje y autoriza el registro de sus datos conforme a los <a href="https://www.argentina.gob.ar/normativa/nacional/ley-26529-160432/actualizacion" target="_blank" rel="noopener noreferrer">términos de la Ley 26.529</a>.</label>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section v-if="directStep === 1" class="panel card direct-section" aria-labelledby="direct-anthropometry-heading">
+                    <div class="panel-head card-header">
+                      <div>
+                        <h2 id="direct-anthropometry-heading">Antropometría</h2>
+                        <p class="muted">Ingresá las medidas tomadas durante este control.</p>
+                      </div>
+                    </div>
+                    <div class="card-body detail-panel">
+                      <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                          <label class="form-label" for="direct-weight">Peso (kg)</label>
+                          <input id="direct-weight" v-model="directForm.antropometria.pesoKg" class="form-control" type="number" min="30" max="300" step="0.1" placeholder="Ej.: 72,5" required />
+                          <small class="form-text">Rango permitido: 30–300 kg.</small>
+                        </div>
+                        <div class="col-12 col-md-4">
+                          <label class="form-label" for="direct-height">Talla (cm)</label>
+                          <input id="direct-height" v-model="directForm.antropometria.tallacm" class="form-control" type="number" min="120" max="220" step="0.1" placeholder="Ej.: 168" required />
+                          <small class="form-text">Rango permitido: 120–220 cm.</small>
+                        </div>
+                        <div class="col-12 col-md-4">
+                          <label class="form-label" for="direct-waist">Cintura (cm)</label>
+                          <input id="direct-waist" v-model="directForm.antropometria.cinturacm" class="form-control" type="number" min="1" max="300" step="0.1" placeholder="Ej.: 88" required />
+                          <small class="form-text">Rango permitido: 1–300 cm.</small>
+                        </div>
+                      </div>
+                      <div class="bmi-live" aria-live="polite"><span>IMC estimado</span><strong>{{ directBmi === null ? '—' : directBmi.toFixed(1) }}</strong><small>Se calcula con peso y talla ingresados.</small></div>
+                    </div>
+                  </section>
+
+                  <section v-if="directStep === 1" class="panel card direct-section" aria-labelledby="direct-pressure-heading">
+                    <div class="panel-head card-header">
+                      <div>
+                        <h2 id="direct-pressure-heading">Presión arterial</h2>
+                        <p class="muted">Registrá la toma de presión arterial del paciente.</p>
+                      </div>
+                    </div>
+                    <div class="card-body detail-panel">
+                      <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="direct-systolic">Sistólica (mmHg)</label>
+                          <input id="direct-systolic" v-model="directForm.tomaPresion.sistolicaMmHg" class="form-control" type="number" min="70" max="260" step="1" placeholder="Ej.: 120" required />
+                          <small class="form-text">Rango de carga permitido: 70–260 mmHg.</small>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="direct-diastolic">Diastólica (mmHg)</label>
+                          <input id="direct-diastolic" v-model="directForm.tomaPresion.diastolicaMmHg" class="form-control" type="number" min="40" max="150" step="1" placeholder="Ej.: 80" required />
+                          <small class="form-text">Rango de carga permitido: 40–150 mmHg.</small>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section v-if="directStep === 2" class="panel card direct-section" aria-labelledby="direct-questionnaire-heading">
+                    <div class="panel-head card-header">
+                      <div>
+                        <h2 id="direct-questionnaire-heading">Hábitos y antecedentes familiares</h2>
+                        <p class="muted">Completá el cuestionario junto al paciente.</p>
+                      </div>
+                    </div>
+                    <div class="card-body detail-panel">
+                      <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                          <span class="form-label">¿Realiza actividad física diariamente?</span>
+                          <div class="choice-buttons" role="group" aria-label="Actividad física">
+                            <button type="button" class="choice-button" :class="{ selected: directForm.cuestionario.actividadFisica === 'true' }" :aria-pressed="directForm.cuestionario.actividadFisica === 'true'" @click="directForm.cuestionario.actividadFisica = 'true'">Sí</button>
+                            <button type="button" class="choice-button" :class="{ selected: directForm.cuestionario.actividadFisica === 'false' }" :aria-pressed="directForm.cuestionario.actividadFisica === 'false'" @click="directForm.cuestionario.actividadFisica = 'false'">No</button>
+                          </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <span class="form-label">¿Consume frutas y verduras diariamente?</span>
+                          <div class="choice-buttons" role="group" aria-label="Consumo de frutas y verduras">
+                            <button type="button" class="choice-button" :class="{ selected: directForm.cuestionario.frutasVerduras === 'true' }" :aria-pressed="directForm.cuestionario.frutasVerduras === 'true'" @click="directForm.cuestionario.frutasVerduras = 'true'">Sí</button>
+                            <button type="button" class="choice-button" :class="{ selected: directForm.cuestionario.frutasVerduras === 'false' }" :aria-pressed="directForm.cuestionario.frutasVerduras === 'false'" @click="directForm.cuestionario.frutasVerduras = 'false'">No</button>
+                          </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <span class="form-label">¿Toma medicación para la hipertensión?</span>
+                          <div class="choice-buttons" role="group" aria-label="Medicación para la hipertensión">
+                            <button type="button" class="choice-button" :class="{ selected: directForm.cuestionario.medicacion === 'true' }" :aria-pressed="directForm.cuestionario.medicacion === 'true'" @click="directForm.cuestionario.medicacion = 'true'">Sí</button>
+                            <button type="button" class="choice-button" :class="{ selected: directForm.cuestionario.medicacion === 'false' }" :aria-pressed="directForm.cuestionario.medicacion === 'false'" @click="directForm.cuestionario.medicacion = 'false'">No</button>
+                          </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <span class="form-label">Tabaquismo</span>
+                          <div class="choice-buttons" role="group" aria-label="Tabaquismo">
+                            <button v-for="option in tobacco" :key="option.value" type="button" class="choice-button" :class="{ selected: directForm.cuestionario.tabaquismo === option.value }" :aria-pressed="directForm.cuestionario.tabaquismo === option.value" @click="directForm.cuestionario.tabaquismo = option.value">{{ option.label }}</button>
+                          </div>
+                        </div>
+                        <div class="col-12">
+                          <span class="form-label">Antecedentes familiares</span>
+                          <div class="choice-buttons" role="group" aria-label="Antecedentes familiares">
+                            <button type="button" class="choice-button" :class="{ selected: directForm.cuestionario.antecedenteFamiliar === 'NO' }" :aria-pressed="directForm.cuestionario.antecedenteFamiliar === 'NO'" @click="clearFamilyHistory()">No refiere</button>
+                            <button type="button" class="choice-button" :class="{ selected: directForm.cuestionario.antecedenteFamiliar !== 'NO' && directForm.cuestionario.antecedenteFamiliar !== '' }" :aria-pressed="directForm.cuestionario.antecedenteFamiliar !== 'NO' && directForm.cuestionario.antecedenteFamiliar !== ''" @click="setFamilyHistoryPresent()">Sí</button>
+                          </div>
+                        </div>
+                        <fieldset v-if="hasFamilyHistory" class="col-12 antecedent-types">
+                          <legend>Indicá cada condición y el familiar que la presenta</legend>
+                          <div v-for="(item, index) in directForm.cuestionario.antecedentesFamiliares" :key="index" class="row g-2 align-items-end mb-2">
+                            <div class="col-12 col-md-5"><label class="form-label" :for="'direct-family-type-' + index">Condición</label><select :id="'direct-family-type-' + index" v-model="item.tipo" class="form-select" required><option value="">Elegí una…</option><option v-for="option in antecedentTypes" :key="option.value" :value="option.value">{{ option.label }}</option></select></div>
+                            <div class="col-12 col-md-5"><label class="form-label" :for="'direct-family-relative-' + index">Familiar</label><select :id="'direct-family-relative-' + index" v-model="item.parentesco" class="form-select" required><option value="">Elegí un familiar…</option><option v-for="option in familyRelationships" :key="option.value" :value="option.value">{{ option.label }}</option></select></div>
+                            <div class="col-12 col-md-2"><button type="button" class="btn btn-outline-danger w-100" @click="removeFamilyHistory(index)">Quitar</button></div>
+                          </div>
+                          <button type="button" class="btn btn-outline-secondary btn-sm" @click="addFamilyHistory()">＋ Agregar antecedente</button>
+                        </fieldset>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section v-if="directStep === 3" class="panel card direct-section" aria-labelledby="direct-review-heading">
+                    <div class="panel-head card-header">
+                      <div>
+                        <h2 id="direct-review-heading">Revisar y guardar</h2>
+                        <p class="muted">Revisá la información antes de confirmar la atención.</p>
+                      </div>
+                    </div>
+                    <div class="card-body detail-panel">
+                      <dl class="direct-review mb-0">
+                        <div class="direct-review-item">
+                          <div><dt>Enfermero</dt><dd>{{ directReview.operador }}</dd></div>
+                          <button type="button" class="btn btn-outline-secondary btn-sm" @click="goToDirectStep(0)" aria-label="Editar enfermero">Editar</button>
+                        </div>
+                        <div class="direct-review-item">
+                          <div><dt>Paciente</dt><dd>{{ directReview.paciente }}</dd></div>
+                          <button type="button" class="btn btn-outline-secondary btn-sm" @click="goToDirectStep(0)" aria-label="Editar paciente">Editar</button>
+                        </div>
+                        <div class="direct-review-item">
+                          <div><dt>Atención</dt><dd>{{ directReview.registro }}</dd><dt>Supervisor</dt><dd>{{ directReview.supervisor }}</dd></div>
+                          <button type="button" class="btn btn-outline-secondary btn-sm" @click="goToDirectStep(0)" aria-label="Editar datos de la atención">Editar</button>
+                        </div>
+                        <div class="direct-review-item">
+                          <div><dt>Medidas</dt><dd>{{ directReview.antropometria }}</dd></div>
+                          <button type="button" class="btn btn-outline-secondary btn-sm" @click="goToDirectStep(1)" aria-label="Editar medidas">Editar</button>
+                        </div>
+                        <div class="direct-review-item">
+                          <div><dt>Presión arterial</dt><dd>{{ directReview.presion }}</dd></div>
+                          <button type="button" class="btn btn-outline-secondary btn-sm" @click="goToDirectStep(1)" aria-label="Editar presión arterial">Editar</button>
+                        </div>
+                        <div class="direct-review-item">
+                          <div><dt>Hábitos y antecedentes</dt><dd class="direct-review-habits">{{ directReview.cuestionario }}</dd></div>
+                          <button type="button" class="btn btn-outline-secondary btn-sm" @click="goToDirectStep(2)" aria-label="Editar hábitos y antecedentes">Editar</button>
+                        </div>
+                      </dl>
+                    </div>
+                  </section>
+                </fieldset>
+                <div class="direct-submit">
+                  <p class="muted m-0">{{ directStep === directSteps.length - 1 ? 'Al confirmar, todos los datos se guardan juntos.' : 'Los datos se conservan al avanzar o volver.' }}</p>
+                  <div class="direct-step-actions">
+                    <button v-if="directStep > 0" type="button" class="btn btn-outline-secondary" :disabled="busy || loading || Boolean(loadError)" @click="previousDirectStep()">Anterior</button>
+                    <button type="submit" class="btn btn-primary primary" :disabled="busy || loading || Boolean(loadError) || (directStep === 0 && !directForm.consent)">
+                      <span v-if="busy" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                      {{ busy ? 'Guardando atención…' : directStep === directSteps.length - 1 ? 'Guardar y finalizar' : 'Continuar' }}
+                    </button>
+                  </div>
+                </div>
+              </form>
+              </div>
+
+              <article v-if="directSaved" id="direct-result" class="completion-card panel card mt-4" aria-labelledby="direct-result-heading" tabindex="-1">
+                <div class="card-body completion-body">
+                  <header class="completion-header">
+                    <span class="completion-header-check" aria-hidden="true">✓</span>
+                    <div><p class="eyebrow mb-1">ATENCIÓN REGISTRADA</p><h2 id="direct-result-heading">Registro exitoso</h2><p class="mb-0">La atención y sus controles se guardaron correctamente.</p></div>
+                  </header>
+                  <div class="qr-ticket">
+                    <div class="completion-signal" :data-signal="directGlobalSignal" role="img" :aria-label="'Semáforo global: ' + directGlobalSignalLabel">
+                      <p class="eyebrow">SEMÁFORO GLOBAL</p>
+                      <div class="completion-traffic-light" aria-hidden="true">
+                        <span class="completion-lamp" data-signal="ROJO" :class="{ active: directGlobalSignal === 'ROJO' }"></span>
+                        <span class="completion-lamp" data-signal="AMARILLO" :class="{ active: directGlobalSignal === 'AMARILLO' }"></span>
+                        <span class="completion-lamp" data-signal="VERDE" :class="{ active: directGlobalSignal === 'VERDE' }"></span>
+                      </div>
+                      <strong>{{ directGlobalSignalLabel }}</strong>
+                      <span v-if="directGlobalSignal === 'ROJO' && directSaved.resultado?.derivacionInmediata" class="completion-urgent">Urgente: avise ahora a Enfermería; el equipo le indicará la derivación adecuada (centro de salud o guardia).</span><span v-else-if="directGlobalSignal === 'ROJO'" class="completion-urgent">Derivación: consulte con el centro de salud.</span><span v-else-if="directGlobalSignal === 'AMARILLO'" class="completion-followup">Seguimiento: consulte con su centro de salud.</span>
+                    </div>
+                    <div class="qr-code-wrap">
+                      <img class="consult-qr" :src="directQrImageUrl" alt="Código QR para consultar la ficha" />
+                      <span>Escaneá para consultar</span>
+                      <small>Entregá este QR únicamente al paciente.</small>
+                    </div>
+                  </div>
+                  <div class="d-flex flex-wrap gap-2 completion-actions">
+                    <button type="button" class="btn btn-primary primary print-button" :disabled="busy" @click="printDirectResult()">Imprimir QR</button>
+                    <a class="btn btn-outline-primary" :href="directConsultUrl" target="_blank" rel="noopener" aria-label="Abrir vista previa de la consulta pública del paciente">Vista previa de consulta</a>
+                    <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="startDirectRegistration()">Nueva atención</button>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+          <aside v-if="!directSaved" class="quick-summary card" aria-label="Vista rápida del registro">
+            <div class="quick-summary-heading"><div><p class="eyebrow mb-1">VISTA RÁPIDA</p><h2>Resumen</h2></div><span class="summary-status" :class="directSaved || directForm.consent ? 'complete' : ''">{{ directSaved ? 'Guardado' : directForm.consent ? 'En carga' : 'Pendiente' }}</span></div>
+            <div class="quick-summary-row"><span>Registro</span><strong>{{ directSaved ? (directSaved.tamizaje.id_registro || '#' + directSaved.tamizaje.id) : 'Se asigna al finalizar' }}</strong></div>
+            <div class="quick-summary-row"><span>Edad</span><strong>{{ directPatientAge === null ? '—' : directPatientAge + ' años' }}</strong></div>
+            <div class="quick-summary-row"><span>Cuestionario</span><strong>{{ directForm.cuestionario.tabaquismo ? 'Completo' : 'Pendiente' }}</strong></div>
+            <div class="quick-summary-row"><span>IMC</span><strong>{{ directBmi === null ? '—' : directBmi.toFixed(1) }}</strong></div>
+            <div class="quick-summary-row"><span>Presión</span><strong>{{ directForm.tomaPresion.sistolicaMmHg && directForm.tomaPresion.diastolicaMmHg ? directForm.tomaPresion.sistolicaMmHg + '/' + directForm.tomaPresion.diastolicaMmHg : '—' }}</strong></div>
+            <div class="quick-summary-callout"><strong>Orientación preventiva</strong><p>El tamizaje registra mediciones y factores de riesgo. No confirma un diagnóstico.</p></div>
+            <p class="quick-summary-footnote">Los datos se guardan al finalizar la atención.</p>
+          </aside>
+          </div>
+
+          <template v-else-if="!record">
+            <template v-if="page === 'inicio'">
+              <div class="stats row g-3">
+                <div class="col-12 col-md-4"><article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">▤</span><h2 class="stat-label">Tamizajes registrados</h2><strong>{{ loading ? "—" : records.length }}</strong><small>Evaluaciones cargadas</small></div></article></div>
+                <div class="col-12 col-md-4"><article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">◎</span><h2 class="stat-label">Pacientes registrados</h2><strong>{{ loading ? "—" : patients.length }}</strong><small>Personas en el sistema</small></div></article></div>
+                <div class="col-12 col-md-4"><article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">✚</span><h2 class="stat-label">Profesionales</h2><strong>{{ loading ? "—" : staff.length }}</strong><small>Integrantes del equipo de salud</small></div></article></div>
+              </div>
+              <div class="stats dashboard-metrics row g-3 mt-1">
+                <div class="col-12 col-md-4">
+                  <article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">↗</span><h2 class="stat-label">Edad promedio</h2><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.edadPromedio) }}</strong><small>Años · por evaluación</small></div></article>
+                </div>
+                <div class="col-12 col-md-4">
+                  <article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">◉</span><h2 class="stat-label">IMC promedio</h2><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.imcPromedio) }}</strong><small>kg/m² · controles válidos</small></div></article>
+                </div>
+                <div class="col-12 col-md-4">
+                  <article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">♡</span><h2 class="stat-label">Presión promedio</h2><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.sistolicaPromedio) + "/" + formatDashboardMetric(dashboard?.diastolicaPromedio) }}</strong><small>mmHg · última toma válida</small></div></article>
+                </div>
+                <div class="col-12">
+                  <article class="dashboard-breakdown card">
+                    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+                      <div><p class="eyebrow mb-1">RESULTADOS CALCULADOS</p><strong>{{ loading ? "—" : dashboard?.totalConResultado ?? 0 }} con resultado</strong></div>
+                      <div class="dashboard-signals">
+                        <span class="dashboard-signal" data-signal="VERDE">Verde <strong>{{ loading ? "—" : dashboard?.semaforoVerde ?? 0 }}</strong></span>
+                        <span class="dashboard-signal" data-signal="AMARILLO">Amarillo <strong>{{ loading ? "—" : dashboard?.semaforoAmarillo ?? 0 }}</strong></span>
+                        <span class="dashboard-signal" data-signal="ROJO">Rojo <strong>{{ loading ? "—" : dashboard?.semaforoRojo ?? 0 }}</strong></span>
+                        <span class="dashboard-signal urgent">Derivación inmediata <strong>{{ loading ? "—" : dashboard?.derivacionesInmediatas ?? 0 }}</strong></span>
+                      </div>
+                      <small class="muted">Promedios por evaluación; resultados agregados sin mostrar datos individuales.</small>
+                    </div>
+                  </article>
+                </div>
+              </div>
+              <div class="row g-3 mt-1 dashboard-charts">
+                <div class="col-12 col-lg-5">
+                  <article class="dashboard-chart-card card h-100">
+                    <div class="card-body">
+                      <p class="eyebrow mb-1">DISTRIBUCIÓN</p>
+                      <h2 class="dashboard-chart-title">Semáforo global</h2>
+                      <div class="dashboard-donut-layout">
+                        <div class="dashboard-donut" :style="{ background: dashboardSignalChart }" role="img" :aria-label="dashboardSignalTotal + ' resultados clasificados por semáforo'">
+                          <div><strong>{{ loading ? "—" : dashboardSignalTotal }}</strong><span>resultados</span></div>
+                        </div>
+                        <div class="dashboard-legend">
+                          <div><span class="dashboard-legend-dot" data-signal="VERDE"></span><span>Verde</span><strong>{{ loading ? "—" : dashboard?.semaforoVerde ?? 0 }}</strong></div>
+                          <div><span class="dashboard-legend-dot" data-signal="AMARILLO"></span><span>Amarillo</span><strong>{{ loading ? "—" : dashboard?.semaforoAmarillo ?? 0 }}</strong></div>
+                          <div><span class="dashboard-legend-dot" data-signal="ROJO"></span><span>Rojo</span><strong>{{ loading ? "—" : dashboard?.semaforoRojo ?? 0 }}</strong></div>
+                        </div>
+                      </div>
+                      <p class="dashboard-chart-note">Cantidad de resultados según el peor control registrado.</p>
+                    </div>
+                  </article>
+                </div>
+                <div class="col-12 col-lg-7">
+                  <article class="dashboard-chart-card card h-100">
+                    <div class="card-body">
+                      <p class="eyebrow mb-1">INDICADORES AGREGADOS</p>
+                      <h2 class="dashboard-chart-title">Promedios del grupo</h2>
+                      <div class="dashboard-average-chart">
+                        <div class="dashboard-average-row"><div><span>Edad</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.edadPromedio) }} años</strong></div><div class="dashboard-bar-track" role="img" :aria-label="'Edad promedio: ' + formatDashboardMetric(dashboard?.edadPromedio) + ' de 120 años de escala'"><span class="dashboard-bar" data-kind="age" :style="{ width: dashboardBarWidth(dashboard?.edadPromedio, 120) }"></span></div><small>Escala visual: 0–120 años</small></div>
+                        <div class="dashboard-average-row"><div><span>IMC</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.imcPromedio) }} kg/m²</strong></div><div class="dashboard-bar-track" role="img" :aria-label="'IMC promedio: ' + formatDashboardMetric(dashboard?.imcPromedio) + ' de 50 de escala'"><span class="dashboard-bar" data-kind="bmi" :style="{ width: dashboardBarWidth(dashboard?.imcPromedio, 50) }"></span></div><small>Escala visual: 0–50 kg/m²</small></div>
+                        <div class="dashboard-average-row"><div><span>Sistólica</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.sistolicaPromedio) }} mmHg</strong></div><div class="dashboard-bar-track" role="img" :aria-label="'Presión sistólica promedio: ' + formatDashboardMetric(dashboard?.sistolicaPromedio) + ' de 260 mmHg de escala'"><span class="dashboard-bar" data-kind="pressure" :style="{ width: dashboardBarWidth(dashboard?.sistolicaPromedio, 260) }"></span></div><small>Escala visual: 0–260 mmHg</small></div>
+                        <div class="dashboard-average-row"><div><span>Diastólica</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.diastolicaPromedio) }} mmHg</strong></div><div class="dashboard-bar-track" role="img" :aria-label="'Presión diastólica promedio: ' + formatDashboardMetric(dashboard?.diastolicaPromedio) + ' de 150 mmHg de escala'"><span class="dashboard-bar" data-kind="pressure" :style="{ width: dashboardBarWidth(dashboard?.diastolicaPromedio, 150) }"></span></div><small>Escala visual: 0–150 mmHg</small></div>
+                      </div>
+                      <p class="dashboard-chart-note">Cada barra usa su propia escala; los datos son promedios, no tendencias.</p>
+                    </div>
+                  </article>
+                </div>
+              </div>
+              <section class="hero">
+                <div>
+                  <p class="eyebrow">CADA CONTROL CUENTA</p>
+                  <h2>Prevenir hoy.<br />Cuidar el mañana.</h2>
+                  <p>
+                    Completá una evaluación integral para identificar<br
+                      class="d-none d-md-block"
+                    />
+                    factores de riesgo y orientar el cuidado.
+                  </p>
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary"
+                    :disabled="loading || busy"
+                    @click="startDirectRegistration()"
+                  >
+                    Iniciar una evaluación <span aria-hidden="true">↗</span>
+                  </button>
+                </div>
+                <div class="hero-art" aria-hidden="true">
+                  <span class="hero-heart">♡</span
+                  ><span>Salud en cada paso</span>
+                </div>
+              </section>
+            </template>
+
+            <section class="panel card">
+              <div class="panel-head card-header">
+                <div>
+                  <h2>
+                    {{ page === "inicio" ? "Últimos tamizajes" : pageTitle }}
+                  </h2>
+                  <p class="muted">
+                    {{ page === 'pacientes' ? 'Información demográfica y registro.' : page === 'equipo' ? 'Personal responsable de las evaluaciones.' : 'Consultá las fichas y continuá las evaluaciones.' }}
+                  </p>
+                </div>
+                <div class="tools">
+                  <div class="input-group search">
+                    <span class="input-group-text" aria-hidden="true">⌕</span>
+                    <label class="visually-hidden" for="records-search"
+                      >Buscar registros</label
+                    >
+                    <input
+                      id="records-search"
+                      v-model="query"
+                      class="form-control"
+                      type="search"
+                      placeholder="Buscar registros…"
+                      autocomplete="off"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary icon-button"
+                    aria-label="Actualizar registros"
+                    :disabled="loading || busy"
+                    @click="reload()"
+                  >
+                    <span aria-hidden="true">↻</span>
+                  </button>
+                </div>
+              </div>
+              <div v-if="loading" class="empty" role="status">
+                <span
+                  class="spinner-border spinner-border-sm me-2"
+                  aria-hidden="true"
+                ></span
+                >Cargando registros…
+              </div>
+              <template v-else-if="page === 'pacientes'">
+                <div v-if="!filteredPatients.length" class="empty">
+                  <h3>
+                    {{ query ? "Sin coincidencias" : "Todavía no hay pacientes" }}
+                  </h3>
+                  <p>
+                    {{ query ? 'Probá con otra búsqueda.' : 'Registrá un paciente para comenzar.' }}
+                  </p>
+                </div>
+                <div v-else class="table-responsive table-wrap">
+                  <table class="table table-hover align-middle mb-0">
+                    <caption class="visually-hidden">
+                      Pacientes registrados
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Paciente</th>
+                        <th scope="col">Fecha de nacimiento</th>
+                        <th scope="col">Edad</th>
+                        <th scope="col">Sexo</th>
+                        <th scope="col">Fecha de registro</th>
+                        <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="patient in filteredPatients"
+                        :key="patient.id_paciente"
+                      >
+                        <th scope="row">Paciente #{{ patient.id_paciente }}</th>
+                        <td>{{ dateFormat(patient.fecha_nacimiento) }}</td>
+                        <td>{{ age(patient.fecha_nacimiento) }} años</td>
+                        <td>{{ sexLabel(patient.sexo) }}</td>
+                        <td>{{ dateFormat(patient.fecha_registro) }}</td>
+                        <td class="text-end"><button type="button" class="btn btn-sm btn-outline-secondary" :disabled="busy" @click="openModal('paciente', patient)">Editar</button> <button type="button" class="btn btn-sm btn-outline-danger" :disabled="busy" @click="deleteEntity('paciente', patient)">Eliminar</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </template>
+              <template v-else-if="page === 'equipo'">
+                <div v-if="!filteredStaff.length" class="empty">
+                  <h3>
+                    {{ query ? 'Sin coincidencias' : 'Todavía no hay profesionales' }}
+                  </h3>
+                  <p>
+                    {{ query ? 'Probá con otra búsqueda.' : 'Agregá al personal responsable de las evaluaciones.' }}
+                  </p>
+                </div>
+                <div v-else class="table-responsive table-wrap">
+                  <table class="table table-hover align-middle mb-0">
+                    <caption class="visually-hidden">
+                      Equipo de salud
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Profesional</th>
+                        <th scope="col">Rol</th>
+                        <th scope="col">Turno</th>
+                        <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="member in filteredStaff" :key="member.id">
+                        <th scope="row">
+                          {{ member.nombre }} {{ member.apellido }}
+                        </th>
+                        <td>
+                          <span
+                            class="badge status-badge"
+                            :class="badgeClass(member.rol)"
+                            >{{ label(member.rol) }}</span
+                          >
+                        </td>
+                        <td>{{ label(member.turno) }}</td>
+                        <td class="text-end"><button type="button" class="btn btn-sm btn-outline-secondary" :disabled="busy" @click="openModal('enfermero', member)">Editar</button> <button type="button" class="btn btn-sm btn-outline-danger" :disabled="busy" @click="deleteEntity('enfermero', member)">Eliminar</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </template>
+              <template v-else>
+                <div v-if="!filteredRecords.length" class="empty">
+                  <h3>
+                    {{ query ? "Sin coincidencias" : "Todavía no hay tamizajes" }}
+                  </h3>
+                  <p>
+                    {{ query ? 'Probá con otra búsqueda.' : 'Los registros guardados aparecerán aquí.' }}
+                  </p>
+                </div>
+                <div v-else class="table-responsive table-wrap">
+                  <table class="table table-hover align-middle mb-0">
+                    <caption class="visually-hidden">
+                      {{ page === 'inicio' ? 'Últimos tamizajes' : 'Tamizajes registrados' }}
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Registro</th>
+                        <th scope="col">Fecha</th>
+                        <th scope="col">Consentimiento</th>
+                        <th scope="col">
+                          <span class="visually-hidden">Acciones</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="row in page === 'inicio'
+                          ? recentRecords
+                          : filteredRecords"
+                        :key="row.id"
+                      >
+                        <th scope="row">
+                          #{{ row.id }}<small class="d-block text-body-secondary"
+                            >Ficha #{{ row.id }}</small
+                          >
+                        </th>
+                        <td>{{ dateFormat(row.timestamp) }}</td>
+                        <td>
+                          <span
+                            class="badge status-badge"
+                            :class="
+                              badgeClass(row.consent ? 'ACEPTADO' : 'PENDIENTE')
+                            "
+                            >{{ row.consent ? "Aceptado" : "Pendiente" }}</span
+                          >
+                        </td>
+                        <td class="text-end">
+                          <button
+                            type="button"
+                            class="btn btn-link text-button"
+                            :disabled="busy"
+                            @click="openRecord(row)"
+                            :aria-label="'Abrir ficha ' + row.id"
+                          >
+                            Abrir ficha <span aria-hidden="true">↗</span>
+                          </button>
+                          <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="busy" @click="openModal('tamizaje', row)">Editar</button>
+                          <button type="button" class="btn btn-sm btn-outline-danger" :disabled="busy" @click="deleteEntity('tamizaje', row)">Eliminar</button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </template>
+            </section>
+          </template>
+
+          <template v-else>
+            <button
+              type="button"
+              class="btn btn-link text-button back"
+              :disabled="busy"
+              @click="backToRecords()"
+            >
+              ← Volver a tamizajes
+            </button>
+            <section class="detail-intro">
+              <span class="stat-icon" aria-hidden="true">♡</span>
+              <div>
+                <h2>Registro #{{ record.id }}</h2>
+                <p class="muted">
+                  Ficha #{{ record.id }}<span v-if="record.paciente?.id_paciente">
+                    · Paciente #{{ record.paciente.id_paciente }}</span
+                  >
+                  · Consentimiento
+                  {{ record.consent ? "aceptado" : "pendiente" }}
+                </p>
+              </div>
+              <span
+                class="badge status-badge"
+                :class="
+                  badgeClass(
+                    result && !resultOutdated ? 'EVALUADO' : 'EN CURSO',
+                  )
+                "
+                >{{ result && !resultOutdated ? "Evaluado" : "En curso" }}</span
+              >
+            </section>
+            <div
+              v-if="!record.consent"
+              class="alert alert-warning"
+              role="alert"
+            >
+              Esta ficha no cuenta con consentimiento. No se pueden registrar
+              controles ni calcular resultados.
+            </div>
+            <div v-if="detailError" class="alert alert-danger" role="alert">
+              {{ detailError }}
+              <button
+                type="button"
+                class="btn btn-outline-danger btn-sm ms-2"
+                :disabled="detailLoading || busy"
+                @click="loadRecord()"
+              >
+                Reintentar
+              </button>
+            </div>
+            <div
+              v-if="formError && !modalKind"
+              class="alert alert-danger"
+              role="alert"
+            >
+              {{ formError }}
+            </div>
+            <div
+              class="nav nav-tabs tabs"
+              role="tablist"
+              aria-label="Controles del tamizaje"
+            >
+              <button
+                id="control-tab-antropometria"
+                type="button"
+                class="nav-link"
+                :class="{ active: tab === 'antropometria' }"
+                role="tab"
+                aria-controls="control-panel"
+                :aria-selected="tab === 'antropometria'"
+                :disabled="busy"
+                @click="tab = 'antropometria'"
+              >
+                01 · Antropometría
+              </button>
+              <button
+                id="control-tab-presion"
+                type="button"
+                class="nav-link"
+                :class="{ active: tab === 'presion' }"
+                role="tab"
+                aria-controls="control-panel"
+                :aria-selected="tab === 'presion'"
+                :disabled="busy"
+                @click="tab = 'presion'"
+              >
+                02 · Presión arterial
+              </button>
+              <button
+                id="control-tab-cuestionario"
+                type="button"
+                class="nav-link"
+                :class="{ active: tab === 'cuestionario' }"
+                role="tab"
+                aria-controls="control-panel"
+                :aria-selected="tab === 'cuestionario'"
+                :disabled="busy"
+                @click="tab = 'cuestionario'"
+              >
+                03 · Cuestionario
+              </button>
+              <button
+                id="control-tab-resultado"
+                type="button"
+                class="nav-link"
+                :class="{ active: tab === 'resultado' }"
+                role="tab"
+                aria-controls="control-panel"
+                :aria-selected="tab === 'resultado'"
+                :disabled="busy"
+                @click="tab = 'resultado'"
+              >
+                04 · Resultado
+              </button>
+            </div>
+            <section
+              id="control-panel"
+              class="panel card"
+              role="tabpanel"
+              :aria-labelledby="'control-tab-' + tab"
+              tabindex="0"
+            >
+              <div class="card-body detail-panel">
+                <p v-if="detailLoading" role="status">
+                  <span
+                    class="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  ></span
+                  >Cargando controles…
+                </p>
+                <p v-else-if="detailError" class="muted">
+                  Reintentá la carga de la ficha para continuar.
+                </p>
+                <template v-else-if="tab === 'antropometria'">
+                  <h2>Medidas antropométricas</h2>
+                  <p class="muted">
+                    Ingresá las medidas tomadas durante la evaluación.
+                  </p>
+                  <template v-if="anthropometry">
+                    <div class="alert alert-success" role="status">
+                      Medidas guardadas.
+                    </div>
+                    <dl class="stats compact row g-3">
+                      <div class="col-6 col-lg-3">
+                        <div class="stat card h-100">
+                          <div class="card-body">
+                            <dt>Peso</dt>
+                            <dd>
+                              <strong>{{ anthropometry.pesoKg }}</strong> kg
+                            </dd>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-6 col-lg-3">
+                        <div class="stat card h-100">
+                          <div class="card-body">
+                            <dt>Talla</dt>
+                            <dd>
+                              <strong>{{ anthropometry.tallacm }}</strong> cm
+                            </dd>
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        v-if="anthropometry.cinturacm > 0"
+                        class="col-6 col-lg-3"
+                      >
+                        <div class="stat card h-100">
+                          <div class="card-body">
+                            <dt>Cintura</dt>
+                            <dd>
+                              <strong>{{ anthropometry.cinturacm }}</strong> cm
+                            </dd>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-6 col-lg-3">
+                        <div class="stat card h-100">
+                          <div class="card-body">
+                            <dt>IMC</dt>
+                            <dd>
+                              <strong>{{ anthropometry.imc != null ? Number(anthropometry.imc).toFixed(1) : "—" }}</strong>
+                            </dd>
+                          </div>
+                        </div>
+                      </div>
+                    </dl>
+                  </template>
+                  <form v-else @submit.prevent="saveAnthropometry()">
+                    <fieldset
+                      :disabled="
+                        busy ||
+                        detailLoading ||
+                        Boolean(detailError) ||
+                        !record.consent
+                      "
+                    >
+                      <legend class="visually-hidden">
+                        Registrar medidas antropométricas
+                      </legend>
+                      <div class="form-grid row g-3">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="pesoKg"
+                            >Peso (kg)</label
+                          ><input
+                            id="pesoKg"
+                            v-model="anthroForm.pesoKg"
+                            class="form-control"
+                            type="number"
+                            min="30"
+                            max="300"
+                            step="0.1"
+                            required
+                          />
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="tallacm"
+                            >Talla (cm)</label
+                          ><input
+                            id="tallacm"
+                            v-model="anthroForm.tallacm"
+                            class="form-control"
+                            type="number"
+                            min="120"
+                            max="220"
+                            step="0.1"
+                            required
+                          />
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="cinturacm"
+                            >Cintura (cm)</label
+                          ><input
+                            id="cinturacm"
+                            v-model="anthroForm.cinturacm"
+                            class="form-control"
+                            type="number"
+                            min="1"
+                            max="300"
+                            step="0.1"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="submit"
+                        class="btn btn-primary primary mt-4"
+                      >
+                        {{ busy ? "Guardando…" : "Guardar medidas" }}
+                      </button>
+                    </fieldset>
+                  </form>
+                </template>
+                <template v-else-if="tab === 'presion'">
+                  <h2>Presión arterial</h2>
+                  <p class="muted">
+                    El resultado utiliza la última toma válida. Podés agregar
+                    varias mediciones.
+                  </p>
+                  <form @submit.prevent="savePressure()">
+                    <fieldset
+                      :disabled="
+                        busy ||
+                        detailLoading ||
+                        Boolean(detailError) ||
+                        !record.consent
+                      "
+                    >
+                      <legend class="visually-hidden">
+                        {{ editingPressure ? "Editar toma de presión" : "Registrar toma de presión" }}
+                      </legend>
+                      <div v-if="editingPressure" class="alert alert-info">
+                        Editando toma {{ editingPressure.numeroToma }}.
+                      </div>
+                      <div class="form-grid row g-3">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="sistolicaMmHg"
+                            >Sistólica (mmHg)</label
+                          ><input
+                            id="sistolicaMmHg"
+                            v-model="pressureForm.sistolicaMmHg"
+                            class="form-control"
+                            type="number"
+                            min="70"
+                            max="260"
+                            step="1"
+                            required
+                          />
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="diastolicaMmHg"
+                            >Diastólica (mmHg)</label
+                          ><input
+                            id="diastolicaMmHg"
+                            v-model="pressureForm.diastolicaMmHg"
+                            class="form-control"
+                            type="number"
+                            min="40"
+                            max="150"
+                            step="1"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary primary">
+                          {{ busy ? 'Guardando…' : editingPressure ? 'Actualizar toma' : 'Registrar toma' }}
+                        </button>
+                        <button
+                          v-if="editingPressure"
+                          type="button"
+                          class="btn btn-outline-secondary"
+                          @click="cancelPressureEdit()"
+                        >
+                          Cancelar edición
+                        </button>
+                      </div>
+                    </fieldset>
+                  </form>
+                  <div v-if="!pressure.length" class="empty compact-empty">
+                    <p>Todavía no hay tomas de presión registradas.</p>
+                  </div>
+                  <div v-else class="table-responsive mt-4 pressure-list">
+                    <table class="table align-middle">
+                      <caption class="visually-hidden">
+                        Tomas de presión registradas
+                      </caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Toma</th>
+                          <th scope="col">Sistólica / diastólica</th>
+                          <th scope="col">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          v-for="measurement in pressure"
+                          :key="measurement.idControl"
+                        >
+                          <th scope="row">{{ measurement.numeroToma }}</th>
+                          <td>
+                            <strong
+                              >{{ measurement.sistolicaMmHg }} /
+                              {{ measurement.diastolicaMmHg }}</strong
+                            >
+                            <small>mmHg</small>
+                          </td>
+                          <td>
+                            <div class="d-flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                class="btn btn-outline-primary btn-sm"
+                                :disabled="
+                                  busy ||
+                                  detailLoading ||
+                                  Boolean(detailError) ||
+                                  !record.consent
+                                "
+                                @click="editPressure(measurement)"
+                                :aria-label="
+                                  'Editar toma ' + measurement.numeroToma
+                                "
+                              >
+                                Editar</button
+                              ><button
+                                type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                :disabled="
+                                  busy ||
+                                  detailLoading ||
+                                  Boolean(detailError) ||
+                                  !record.consent
+                                "
+                                @click="deletePressure(measurement)"
+                                :aria-label="
+                                  'Eliminar toma ' + measurement.numeroToma
+                                "
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </template>
+                <template v-else-if="tab === 'cuestionario'">
+                  <h2>Hábitos y antecedentes</h2>
+                  <p class="muted">
+                    Respondé junto al paciente. Cada respuesta forma parte de la
+                    evaluación.
+                  </p>
+                  <template v-if="savedQuestionnaire">
+                    <p class="alert alert-success" role="status">
+                      Cuestionario guardado correctamente.
+                    </p>
+                    <dl class="answers">
+                      <div>
+                        <dt>Actividad física diaria</dt>
+                        <dd>
+                          {{ savedQuestionnaire.actividadFisica ? "Sí" : "No" }}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Consumo diario de frutas y verduras</dt>
+                        <dd>
+                          {{ savedQuestionnaire.frutasVerduras ? "Sí" : "No" }}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Medicación para la hipertensión</dt>
+                        <dd>
+                          {{ savedQuestionnaire.medicacion ? "Sí" : "No" }}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Tabaquismo</dt>
+                        <dd>{{ label(savedQuestionnaire.tabaquismo) }}</dd>
+                      </div>
+                      <div>
+                        <dt>Antecedentes familiares</dt>
+                        <dd>
+                          {{ label(savedQuestionnaire.antecedenteFamiliar) }}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Tipos de antecedentes</dt>
+                        <dd>
+                          {{ savedQuestionnaire.tiposAntecedentes?.length ? savedQuestionnaire.tiposAntecedentes.map(label).join(', ') : 'Sin antecedentes' }}
+                        </dd>
+                      </div>
+                    </dl>
+                  </template>
+                  <form v-else @submit.prevent="saveQuestionnaire()">
+                    <fieldset
+                      :disabled="
+                        busy ||
+                        detailLoading ||
+                        Boolean(detailError) ||
+                        !record.consent
+                      "
+                    >
+                      <legend class="visually-hidden">
+                        Registrar hábitos y antecedentes
+                      </legend>
+                      <div class="form-grid row g-3">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="actividadFisica"
+                            >¿Realiza actividad física diariamente?</label
+                          ><select
+                            id="actividadFisica"
+                            v-model="questionForm.actividadFisica"
+                            class="form-select"
+                            required
+                          >
+                            <option value="">Seleccionar…</option>
+                            <option value="true">Sí</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="frutasVerduras"
+                            >¿Consume frutas y verduras diariamente?</label
+                          ><select
+                            id="frutasVerduras"
+                            v-model="questionForm.frutasVerduras"
+                            class="form-select"
+                            required
+                          >
+                            <option value="">Seleccionar…</option>
+                            <option value="true">Sí</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="medicacion"
+                            >¿Toma medicación para la hipertensión?</label
+                          ><select
+                            id="medicacion"
+                            v-model="questionForm.medicacion"
+                            class="form-select"
+                            required
+                          >
+                            <option value="">Seleccionar…</option>
+                            <option value="true">Sí</option>
+                            <option value="false">No</option>
+                          </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="tabaquismo"
+                            >Tabaquismo</label
+                          ><select
+                            id="tabaquismo"
+                            v-model="questionForm.tabaquismo"
+                            class="form-select"
+                            required
+                          >
+                            <option value="">Seleccionar…</option>
+                            <option
+                              v-for="option in tobacco"
+                              :key="option.value"
+                              :value="option.value"
+                            >
+                              {{ option.label }}
+                            </option>
+                          </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="antecedenteFamiliar"
+                            >Antecedentes familiares</label
+                          ><select
+                            id="antecedenteFamiliar"
+                            v-model="questionForm.antecedenteFamiliar"
+                            class="form-select"
+                            required
+                          >
+                            <option value="">Seleccionar…</option>
+                            <option
+                              v-for="option in families"
+                              :key="option.value"
+                              :value="option.value"
+                            >
+                              {{ option.label }}
+                            </option>
+                          </select>
+                        </div>
+                        <fieldset
+                          v-if="
+                            questionForm.antecedenteFamiliar &&
+                            questionForm.antecedenteFamiliar !== 'NO'
+                          "
+                          class="col-12 antecedent-types"
+                        >
+                          <legend>
+                            Tipos de antecedentes (seleccioná al menos uno)
+                          </legend>
+                          <div
+                            v-for="option in antecedentTypes"
+                            :key="option.value"
+                            class="form-check mb-2"
+                          >
+                            <input
+                              :id="'antecedente-' + option.value"
+                              v-model="questionForm.tiposAntecedentes"
+                              class="form-check-input"
+                              type="checkbox"
+                              :value="option.value"
+                            />
+                            <label
+                              class="form-check-label"
+                              :for="'antecedente-' + option.value"
+                              >{{ option.label }}</label
+                            >
+                          </div>
+                        </fieldset>
+                      </div>
+                      <button
+                        type="submit"
+                        class="btn btn-primary primary mt-4"
+                      >
+                        {{ busy ? "Guardando…" : "Guardar cuestionario" }}
+                      </button>
+                    </fieldset>
+                  </form>
+                </template>
+                <template v-else-if="tab === 'resultado'">
+                  <h2>Resultado de la evaluación</h2>
+                  <p class="muted">
+                    Completá antropometría, presión arterial y cuestionario
+                    antes de calcular. El servidor determina las
+                    clasificaciones.
+                  </p>
+
+                  <p v-if="!canCalculateResult" class="alert alert-warning">
+                    Para calcular, se necesita consentimiento, antropometría, al
+                    menos una toma de presión y el cuestionario completo.
+                  </p>
+                  <p
+                    v-if="resultOutdated"
+                    class="alert alert-warning"
+                    role="status"
+                  >
+                    Se modificaron controles después del último cálculo.
+                    Recalculá para actualizar el informe.
+                  </p>
+                  <button
+                    type="button"
+                    class="btn btn-primary primary"
+                    :disabled="busy || !canCalculateResult || !record.consent"
+                    @click="calculateResult()"
+                  >
+                    {{ busy ? "Calculando…" : result ? "Recalcular resultado" : "Calcular resultado" }}
+                  </button>
+                  <article
+                    v-if="result"
+                    class="result mt-4"
+                    aria-label="Informe de evaluación"
+                  >
+                    <div class="alert alert-info result-method">
+                      Puntaje orientativo adaptado: incorpora cintura y antecedentes familiares de diabetes, pero no pregunta por glucemia elevada previa. No se informa como FINDRISC formal ni como diagnóstico.
+                    </div>
+                    <div class="result-heading">
+                      <h3>Evaluación integral</h3>
+                      <span
+                        class="badge status-badge"
+                        :class="badgeClass(result.semaforoGlobal)"
+                        >{{ label(result.semaforoGlobal) }}</span
+                      >
+                    </div>
+                    <div
+                      v-if="result.derivacionInmediata"
+                      class="alert alert-danger immediate-referral"
+                      role="alert"
+                    >
+                      <strong>Derivación inmediata.</strong> Avisar al docente o
+                      profesional responsable.
+                    </div>
+                    <div class="stats compact row g-3">
+                      <div class="col-12 col-md-4">
+                        <div class="stat card h-100">
+                          <div class="card-body">
+                            <h4 class="stat-label">Puntaje adaptado de riesgo de diabetes</h4>
+                            <strong>{{ result.puntajeFindrisc }}</strong
+                            ><small>{{ label(result.categoriaFindrisc) }}</small>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <div class="stat card h-100">
+                          <div class="card-body">
+                            <h4 class="stat-label">Riesgo cardiovascular</h4>
+                            <strong class="smaller">{{ label(result.riesgoCardiovascular) }}</strong
+                            ><span
+                              class="badge status-badge"
+                              :class="
+                                badgeClass(result.semaforoRiesgoCardiovascular)
+                              "
+                              >{{ label(result.semaforoRiesgoCardiovascular) }}</span
+                            >
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <div class="stat card h-100">
+                          <div class="card-body">
+                            <h4 class="stat-label">IMC y presión arterial</h4>
+                            <p class="mb-2">
+                              IMC:
+                              <span
+                                class="badge status-badge"
+                                :class="badgeClass(result.semaforoImc)"
+                                >{{ label(result.semaforoImc) }}</span
+                              >
+                            </p>
+                            <p class="mb-0">
+                              Presión:
+                              <span
+                                class="badge status-badge"
+                                :class="badgeClass(result.semaforoPresion)"
+                                >{{ label(result.semaforoPresion) }}</span
+                              >
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p v-if="result.observaciones" class="result-observations">
+                      {{ result.observaciones }}
+                    </p>
+                    <p class="mt-3">
+                      Derivación:
+                      <strong>{{ result.deriva ? "Sí" : "No" }}</strong>
+                    </p>
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary print-button"
+                      :disabled="busy || resultOutdated"
+                      @click="printResult()"
+                    >
+                      Imprimir informe
+                    </button>
+                  </article>
+                </template>
+              </div>
+            </section>
+          </template>
+          <footer class="workspace-footer">
+            <span>PREVENCIÓN · SEGUIMIENTO · CUIDADO</span
+            ><span>Tamizaje / Salud comunitaria</span>
+          </footer>
+        </div>
+      </main>
+
+      <div
+        id="registration-modal"
+        class="modal fade registration-modal"
+        tabindex="-1"
+        aria-labelledby="registration-title"
+        aria-hidden="true"
+      >
+        <div
+          class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable registration-dialog"
+        >
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 id="registration-title" class="modal-title fs-4">
+                {{ modalTitle }}
+              </h2>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Cerrar formulario"
+                :disabled="busy"
+                @click="closeModal()"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <div v-if="formError" class="alert alert-danger" role="alert">
+                {{ formError }}
+              </div>
+              <form
+                v-if="modalKind === 'paciente'"
+                @submit.prevent="saveModal()"
+              >
+                <fieldset :disabled="busy">
+                  <legend class="visually-hidden">Registrar paciente</legend>
+                  <p id="patient-age-help" class="muted visually-hidden">Edad actualizada automáticamente.</p>
+                  <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" for="patient-birthdate"
+                        >Fecha de nacimiento</label
+                      ><input
+                        id="patient-birthdate"
+                        v-model="patientForm.fecha_nacimiento"
+                        class="form-control"
+                        type="date"
+                        required
+                        aria-describedby="patient-age-help"
+                      />
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" for="patient-sex">Sexo</label
+                      ><select
+                        id="patient-sex"
+                        v-model="patientForm.sexo"
+                        class="form-select"
+                        required
+                      >
+                        <option value="">Seleccionar…</option>
+                        <option
+                          v-for="option in sexes"
+                          :key="option.value"
+                          :value="option.value"
+                        >
+                          {{ option.label }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      data-bs-dismiss="modal"
+                      @click="closeModal()"
+                    >
+                      Cancelar</button
+                    ><button type="submit" class="btn btn-primary primary">
+                      {{ busy ? "Guardando…" : "Guardar paciente" }}
+                    </button>
+                  </div>
+                </fieldset>
+              </form>
+              <form
+                v-else-if="modalKind === 'enfermero' || modalKind === 'direct-enfermero'"
+                @submit.prevent="saveModal()"
+              >
+                <fieldset :disabled="busy">
+                  <legend class="visually-hidden">Agregar profesional</legend>
+                  <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" for="staff-name">Nombre</label
+                      ><input
+                        id="staff-name"
+                        v-model="staffForm.nombre"
+                        class="form-control"
+                        type="text"
+                        maxlength="80"
+                        autocomplete="given-name"
+                        placeholder="Ej.: Laura"
+                        required
+                      />
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" for="staff-surname"
+                        >Apellido</label
+                      ><input
+                        id="staff-surname"
+                        v-model="staffForm.apellido"
+                        class="form-control"
+                        type="text"
+                        maxlength="80"
+                        autocomplete="family-name"
+                        placeholder="Ej.: Gómez"
+                        required
+                      />
+                    </div>
+                    <div v-if="modalKind === 'enfermero'" class="col-12 col-md-6">
+                      <label class="form-label" for="staff-role">Rol</label
+                      ><select
+                        id="staff-role"
+                        v-model="staffForm.rol"
+                        class="form-select"
+                        required
+                      >
+                        <option value="">Elegí el turno…</option>
+                        <option
+                          v-for="option in roles"
+                          :key="option.value"
+                          :value="option.value"
+                        >
+                          {{ option.label }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" for="staff-shift">Turno</label
+                      ><select
+                        id="staff-shift"
+                        v-model="staffForm.turno"
+                        class="form-select"
+                        required
+                      >
+                        <option value="">Elegí el turno…</option>
+                        <option
+                          v-for="option in shifts"
+                          :key="option.value"
+                          :value="option.value"
+                        >
+                          {{ option.label }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      data-bs-dismiss="modal"
+                      @click="closeModal()"
+                    >
+                      Cancelar</button
+                    ><button type="submit" class="btn btn-primary primary">
+                      {{ busy ? "Guardando…" : "Guardar profesional" }}
+                    </button>
+                  </div>
+                </fieldset>
+              </form>
+              <form
+                v-else-if="modalKind === 'tamizaje'"
+                @submit.prevent="saveModal()"
+              >
+                <p class="muted">
+                  Seleccioná un paciente y al personal responsable. El operador
+                  debe tener el rol de enfermero; el supervisor es opcional.
+                </p>
+                  <div v-if="!editingEntity && !canCreateScreening" class="alert alert-warning">
+                  Primero registrá al menos un paciente y un profesional con rol
+                  de enfermero.
+                </div>
+                <fieldset :disabled="busy">
+                  <legend class="visually-hidden">Iniciar tamizaje</legend>
+                  <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" for="screening-code"
+                        >Identificador de registro</label
+                      ><input
+                        id="screening-code"
+                        v-model="screeningForm.id_registro"
+                        class="form-control"
+                        type="text"
+                        placeholder="Ej. TAM-2026-001"
+                        maxlength="100"
+                        required
+                      />
+                    </div>
+                    <div v-if="!editingEntity" class="col-12 col-md-6">
+                      <label class="form-label" for="screening-patient"
+                        >Paciente</label
+                      ><select
+                        id="screening-patient"
+                        v-model="screeningForm.paciente"
+                        class="form-select"
+                        required
+                      >
+                        <option value="">Seleccionar…</option>
+                        <option
+                          v-for="patient in patients"
+                          :key="patient.id_paciente"
+                          :value="patient.id_paciente"
+                        >
+                          Paciente #{{ patient.id_paciente }} ·
+                          {{ age(patient.fecha_nacimiento) }} años
+                        </option>
+                      </select>
+                    </div>
+                    <div v-if="!editingEntity" class="col-12 col-md-6">
+                      <label class="form-label" for="screening-operator"
+                        >Operador</label
+                      ><select
+                        id="screening-operator"
+                        v-model="screeningForm.operador"
+                        class="form-select"
+                        required
+                      >
+                        <option value="">Seleccionar…</option>
+                        <option
+                          v-for="member in operators"
+                          :key="member.id"
+                          :value="member.id"
+                        >
+                          {{ member.nombre }} {{ member.apellido }}
+                        </option>
+                      </select>
+                    </div>
+                    <div v-if="!editingEntity" class="col-12 col-md-6">
+                      <label class="form-label" for="screening-supervisor"
+                        >Supervisor (opcional)</label
+                      ><select
+                        id="screening-supervisor"
+                        v-model="screeningForm.supervisor"
+                        class="form-select"
+                      >
+                        <option value="">Sin supervisor</option>
+                        <option
+                          v-for="member in supervisors"
+                          :key="member.id"
+                          :value="member.id"
+                        >
+                          {{ member.nombre }} {{ member.apellido }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <div class="form-check">
+                        <input
+                          id="screening-consent"
+                          v-model="screeningForm.consent"
+                          class="form-check-input"
+                          type="checkbox"
+                          required
+                        /><label
+                          class="form-check-label"
+                          for="screening-consent"
+                          >El paciente acepta el consentimiento para la
+                          evaluación.</label
+                        >
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      data-bs-dismiss="modal"
+                      @click="closeModal()"
+                    >
+                      Cancelar</button
+                    ><button
+                      type="submit"
+                      class="btn btn-primary primary"
+                      :disabled="!editingEntity && !canCreateScreening"
+                    >
+                      {{ busy ? "Creando…" : "Crear ficha" }}
+                    </button>
+                  </div>
+                </fieldset>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+

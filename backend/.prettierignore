@@ -1,0 +1,4 @@
+# Vendor files retain upstream formatting and hashes.
+src/main/resources/static/vendor/
+# Vue DOM templates must keep interpolation string literals on a single line.
+src/main/resources/static/index.html

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "sh gradlew bootJar -x test --no-daemon"
+  },
+  "deploy": {
+    "startCommand": "java -jar build/libs/tamizaje-0.0.1-SNAPSHOT.jar",
+    "healthcheckPath": "/",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
