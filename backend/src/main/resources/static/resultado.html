@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#4b0d1f" />
     <title>Consulta de tamizaje</title>
     <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="/css/app.css?v=20261019-result-measurements" />
+    <link rel="stylesheet" href="/css/app.css?v=20261019-print-fix" />
   </head>
   <body class="public-result-page">
     <main class="public-result-card" aria-labelledby="public-title">
@@ -35,9 +35,12 @@
         </dl>
         <p id="public-recommendation" class="public-recommendation"></p>
         <p class="public-disclaimer">Este tamizaje es orientativo y no reemplaza una consulta ni un diagnóstico profesional.</p>
+        <div class="public-result-actions">
+          <button id="public-print" class="public-result-print" type="button">Imprimir / Guardar PDF</button>
+        </div>
       </section>
       <footer>Centro de salud · Tamizaje preventivo</footer>
     </main>
-    <script type="module" src="/js/consulta-publica.js?v=20261019-result-measurements"></script>
+    <script type="module" src="/js/consulta-publica.js?v=20261019-print-fix"></script>
   </body>
 </html>

@@ -2,6 +2,7 @@ const token = new URLSearchParams(window.location.search).get("token");
 const loading = document.getElementById("public-loading");
 const error = document.getElementById("public-error");
 const content = document.getElementById("public-content");
+document.getElementById("public-print")?.addEventListener("click", () => window.print());
 
 function titleFor(signal) {
   return ({

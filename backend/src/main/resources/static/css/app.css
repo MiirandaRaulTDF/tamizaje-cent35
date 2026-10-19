@@ -817,7 +817,7 @@
   .result .alert {
     display: block !important;
   }
-  .direct-registration > :not(.result) {
+  .direct-registration > :not(.result):not(.completion-card) {
     display: none !important;
   }
   .direct-result-body {
@@ -1101,6 +1101,14 @@
 .public-recommendation { line-height: 1.65; }
 .public-disclaimer { margin-top: 2rem; color: #70676a; font-size: 0.8rem; }
 .public-result-card footer { margin-top: 2rem; color: #8c777e; font-size: 0.75rem; }
+.public-result-actions { display: flex; justify-content: center; margin-top: 1.25rem; }
+.public-result-print { min-height: 2.75rem; padding: .65rem 1rem; border: 0; border-radius: .55rem; background: #315f42; color: #fff; font: inherit; font-weight: 650; cursor: pointer; }
+.public-result-print:hover { background: #244b33; }
+@media print {
+  body.public-result-page { display: block; min-height: 0; padding: 0; background: #fff; }
+  .public-result-card { width: 100%; max-width: none; padding: 0; box-shadow: none; }
+  .public-result-actions { display: none !important; }
+}
 @media (max-width: 767.98px) {
   .qr-ticket { grid-template-columns: minmax(0, 1fr); justify-items: center; }
   .completion-signal { justify-self: center; }
