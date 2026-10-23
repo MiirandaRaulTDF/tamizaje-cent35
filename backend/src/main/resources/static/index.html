@@ -8,36 +8,37 @@
       name="description"
       content="Registro y seguimiento de evaluaciones de tamizaje en el centro de salud."
     />
-    <title>Tamizaje · Salud comunitaria</title>
+    <title>TamizApp · Salud comunitaria</title>
     <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="/css/app.css?v=20261019-print-fix" />
+    <link rel="stylesheet" href="/css/app.css?v=20261022-print-v3" />
     <style>
       [v-cloak] {
         display: none;
       }
     </style>
     <script defer src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
-    <script type="module" src="/js/app.js?v=20261019-family-history"></script>
+    <script type="module" src="/js/app.js?v=20261022-print-v3"></script>
   </head>
   <body>
     <noscript>
       <div class="alert alert-warning m-3">
-        Activá JavaScript en tu navegador para utilizar Tamizaje.
+        Activá JavaScript en tu navegador para utilizar TamizApp.
       </div>
     </noscript>
-    <div id="app" class="app" v-cloak>
+    <div id="app" class="app" :class="{ 'dashboard-mode': page === 'inicio' }" v-cloak>
       <a class="skip-link visually-hidden-focusable" href="#main-content"
         >Ir al contenido principal</a
       >
-      <aside class="workspace-sidebar">
+      <aside v-if="page !== 'inicio'" class="workspace-sidebar">
         <a class="brand" href="#registro" @click.prevent="startDirectRegistration()">
           <span class="brand-icon" aria-hidden="true">✚</span>
-          <span>Tamizaje<small>SALUD PREVENTIVA</small></span>
+          <span>TamizApp<small>SALUD PREVENTIVA</small></span>
         </a>
-        <p class="nav-label">ESPACIO DE TRABAJO</p>
+        <p v-if="page !== 'inicio'" class="nav-label">ESPACIO DE TRABAJO</p>
         <nav
+          v-if="page !== 'inicio'"
           class="workspace-nav nav nav-pills"
-          aria-label="Secciones de Tamizaje"
+          aria-label="Secciones de TamizApp"
         >
           <button
             v-for="section in sections"
@@ -58,19 +59,25 @@
             ></span>
           </button>
         </nav>
-        <div class="sidebar-note">
+        <div v-if="page !== 'inicio'" class="sidebar-note">
           <span class="status-dot" aria-hidden="true"></span> Atención
           preventiva
           <p>Una evaluación a tiempo<br />hace la diferencia.</p>
         </div>
-        <div class="sidebar-footer">
+        <div v-if="page !== 'inicio'" class="sidebar-footer">
           <span class="avatar" aria-hidden="true">CS</span>
           <span>Centro de salud<small>Gestión de tamizajes</small></span>
         </div>
       </aside>
 
-      <main id="main-content" class="workspace-main">
-        <header class="workspace-header">
+      <main id="main-content" class="workspace-main" :style="page === 'inicio' ? { marginLeft: '0', width: '100%', maxWidth: 'none' } : null">
+        <div v-if="page === 'inicio'" class="dashboard-brand">
+          <a class="brand" href="#registro" @click.prevent="startDirectRegistration()">
+            <span class="brand-icon dashboard-brand-icon" aria-hidden="true">✚</span>
+            <span>TamizApp<small>SALUD PREVENTIVA</small></span>
+          </a>
+        </div>
+        <header v-if="page !== 'inicio'" class="workspace-header">
           <span
             >Centro de salud <span class="divider" aria-hidden="true">/</span>
             {{ pageTitle }}</span
@@ -90,19 +97,20 @@
             </select>
           </label>
         </header>
-        <div class="content container-fluid">
-          <div class="page-heading">
+        <div class="content container-fluid" :style="page === 'inicio' ? { width: '100%', maxWidth: 'none', margin: '0 auto', padding: '1rem clamp(1.25rem, 3vw, 2.6rem) 2rem' } : null">
+          <div class="page-heading" :style="page === 'inicio' ? { justifyContent: 'center', textAlign: 'center', position: 'relative' } : null">
             <div>
-              <p class="eyebrow">CUIDADO QUE EMPIEZA CON PREVENCIÓN</p>
+              <p v-if="page !== 'inicio'" class="eyebrow">CUIDADO QUE EMPIEZA CON PREVENCIÓN</p>
               <h1>{{ record ? "Ficha de tamizaje" : pageTitle }}</h1>
-              <p class="muted">
+              <p v-if="page !== 'inicio' || record" class="muted">
                 {{ record ? "Registro #" + record.id : pageDescription }}
               </p>
             </div>
             <button
-              v-if="!record && page !== 'registro'"
+              v-if="!record && page !== 'registro' && page !== 'inicio'"
               type="button"
               class="btn btn-primary primary"
+              :style="page === 'inicio' ? { position: 'absolute', right: '0' } : null"
               :disabled="busy || loading"
               @click="page === 'pacientes' ? openModal('paciente') : page === 'equipo' ? openModal('enfermero') : startDirectRegistration()"
             >
@@ -111,6 +119,13 @@
             </button>
           </div>
 
+          <div v-if="page === 'inicio'" class="dashboard-refresh" :class="{ 'is-refreshing': dashboardRefreshing, 'has-error': dashboardRefreshError }" role="status" aria-live="polite">
+            <span class="dashboard-refresh-dot" aria-hidden="true"></span>
+            <span v-if="dashboardRefreshError">No se pudo actualizar: {{ dashboardRefreshError }}. Se conservan los últimos datos.</span>
+            <span v-else-if="dashboardRefreshing">Actualizando el dashboard…</span>
+            <span v-else-if="dashboardUpdatedAt">Actualizado a las {{ dashboardUpdatedAt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) }} · actualización automática cada minuto</span>
+            <span v-else>Actualización automática cada minuto</span>
+          </div>
           <div v-if="loadError" class="alert alert-danger" role="alert">
             No se pudieron cargar los registros: {{ loadError }}
             <button
@@ -403,7 +418,7 @@
                         <span class="completion-lamp" data-signal="VERDE" :class="{ active: directGlobalSignal === 'VERDE' }"></span>
                       </div>
                       <strong>{{ directGlobalSignalLabel }}</strong>
-                      <span v-if="directGlobalSignal === 'ROJO' && directSaved.resultado?.derivacionInmediata" class="completion-urgent">Urgente: avise ahora a Enfermería; el equipo le indicará la derivación adecuada (centro de salud o guardia).</span><span v-else-if="directGlobalSignal === 'ROJO'" class="completion-urgent">Derivación: consulte con el centro de salud.</span><span v-else-if="directGlobalSignal === 'AMARILLO'" class="completion-followup">Seguimiento: consulte con su centro de salud.</span>
+                      <span class="completion-signal-summary">{{ directResultGuidance.description }}</span>
                     </div>
                     <div class="qr-code-wrap">
                       <img class="consult-qr" :src="directQrImageUrl" alt="Código QR para consultar la ficha" />
@@ -411,6 +426,16 @@
                       <small>Entregá este QR únicamente al paciente.</small>
                     </div>
                   </div>
+                  <section class="completion-recommendation" :data-signal="directGlobalSignal" aria-labelledby="completion-recommendation-title">
+                    <div class="completion-recommendation-main">
+                      <h3 id="completion-recommendation-title">{{ directResultGuidance.title }}</h3>
+                      <h4>Recomendación para la persona</h4>
+                      <p>{{ directResultGuidance.recommendation }}</p>
+                      <h4>{{ directResultGuidance.whyTitle }}</h4>
+                      <p class="mb-0">{{ directResultGuidance.why }}</p>
+                    </div>
+                    <p class="completion-guidance-disclaimer">El tamizaje es orientativo y no reemplaza una consulta ni un diagnóstico profesional.</p>
+                  </section>
                   <div class="d-flex flex-wrap gap-2 completion-actions">
                     <button type="button" class="btn btn-primary primary print-button" :disabled="busy" @click="printDirectResult()">Imprimir QR</button>
                     <a class="btn btn-outline-primary" :href="directConsultUrl" target="_blank" rel="noopener" aria-label="Abrir vista previa de la consulta pública del paciente">Vista previa de consulta</a>
@@ -434,42 +459,39 @@
 
           <template v-else-if="!record">
             <template v-if="page === 'inicio'">
-              <div class="stats row g-3">
-                <div class="col-12 col-md-4"><article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">▤</span><h2 class="stat-label">Tamizajes registrados</h2><strong>{{ loading ? "—" : records.length }}</strong><small>Evaluaciones cargadas</small></div></article></div>
-                <div class="col-12 col-md-4"><article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">◎</span><h2 class="stat-label">Pacientes registrados</h2><strong>{{ loading ? "—" : patients.length }}</strong><small>Personas en el sistema</small></div></article></div>
-                <div class="col-12 col-md-4"><article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">✚</span><h2 class="stat-label">Profesionales</h2><strong>{{ loading ? "—" : staff.length }}</strong><small>Integrantes del equipo de salud</small></div></article></div>
-              </div>
-              <div class="stats dashboard-metrics row g-3 mt-1">
-                <div class="col-12 col-md-4">
-                  <article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">↗</span><h2 class="stat-label">Edad promedio</h2><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.edadPromedio) }}</strong><small>Años · por evaluación</small></div></article>
-                </div>
-                <div class="col-12 col-md-4">
-                  <article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">◉</span><h2 class="stat-label">IMC promedio</h2><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.imcPromedio) }}</strong><small>kg/m² · controles válidos</small></div></article>
-                </div>
-                <div class="col-12 col-md-4">
-                  <article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">♡</span><h2 class="stat-label">Presión promedio</h2><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.sistolicaPromedio) + "/" + formatDashboardMetric(dashboard?.diastolicaPromedio) }}</strong><small>mmHg · última toma válida</small></div></article>
-                </div>
-                <div class="col-12">
-                  <article class="dashboard-breakdown card">
-                    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
-                      <div><p class="eyebrow mb-1">RESULTADOS CALCULADOS</p><strong>{{ loading ? "—" : dashboard?.totalConResultado ?? 0 }} con resultado</strong></div>
-                      <div class="dashboard-signals">
-                        <span class="dashboard-signal" data-signal="VERDE">Verde <strong>{{ loading ? "—" : dashboard?.semaforoVerde ?? 0 }}</strong></span>
-                        <span class="dashboard-signal" data-signal="AMARILLO">Amarillo <strong>{{ loading ? "—" : dashboard?.semaforoAmarillo ?? 0 }}</strong></span>
-                        <span class="dashboard-signal" data-signal="ROJO">Rojo <strong>{{ loading ? "—" : dashboard?.semaforoRojo ?? 0 }}</strong></span>
-                        <span class="dashboard-signal urgent">Derivación inmediata <strong>{{ loading ? "—" : dashboard?.derivacionesInmediatas ?? 0 }}</strong></span>
+              <div class="dashboard-main-grid">
+                <div class="dashboard-left-column">
+                  <div class="stats dashboard-stat-row row g-3">
+                    <div class="col-6"><article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">▤</span><h2 class="stat-label">Tamizajes registrados</h2><strong>{{ loading ? "—" : records.length }}</strong><small>Evaluaciones cargadas</small></div></article></div>
+                    <div class="col-6"><article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">↗</span><h2 class="stat-label">Edad promedio</h2><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.edadPromedio) }}</strong><small>Años · por evaluación</small></div></article></div>
+                    <div class="col-6"><article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">◉</span><h2 class="stat-label">IMC promedio</h2><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.imcPromedio) }}</strong><small>kg/m² · controles válidos</small></div></article></div>
+                    <div class="col-6"><article class="stat card h-100"><div class="card-body"><span class="stat-icon" aria-hidden="true">♡</span><h2 class="stat-label">Presión promedio</h2><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.sistolicaPromedio) + "/" + formatDashboardMetric(dashboard?.diastolicaPromedio) }}</strong><small>mmHg · última toma válida</small></div></article></div>
+                  </div>
+<article class="dashboard-chart-card dashboard-average-card card">
+                    <div class="card-body">
+                      <p class="eyebrow mb-1">INDICADORES AGREGADOS</p>
+                      <h2 class="dashboard-chart-title">Promedios del grupo</h2>
+                      <div class="dashboard-average-chart">
+                        <div class="dashboard-average-row"><div><span>Edad</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.edadPromedio) }} años</strong></div><div class="dashboard-line-track" role="img" :aria-label="'Edad promedio: ' + formatDashboardMetric(dashboard?.edadPromedio) + ' de 120 años de escala'"><span class="dashboard-line" data-kind="age" :style="{ width: dashboardBarWidth(dashboard?.edadPromedio, 120) }"></span><i class="dashboard-line-marker" :style="{ left: dashboardBarWidth(dashboard?.edadPromedio, 120) }"></i></div><small>Escala visual: 0–120 años</small></div>
+                        <div class="dashboard-average-row"><div><span>IMC</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.imcPromedio) }} kg/m²</strong></div><div class="dashboard-line-track" role="img" :aria-label="'IMC promedio: ' + formatDashboardMetric(dashboard?.imcPromedio) + ' de 50 de escala'"><span class="dashboard-line" data-kind="bmi" :style="{ width: dashboardBarWidth(dashboard?.imcPromedio, 50) }"></span><i class="dashboard-line-marker" :style="{ left: dashboardBarWidth(dashboard?.imcPromedio, 50) }"></i></div><small>Escala visual: 0–50 kg/m²</small></div>
+                        <div class="dashboard-average-row"><div><span>Presión sistólica</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.sistolicaPromedio) }} mmHg</strong></div><div class="dashboard-line-track" role="img" :aria-label="'Presión sistólica promedio: ' + formatDashboardMetric(dashboard?.sistolicaPromedio) + ' de 260 mmHg de escala'"><span class="dashboard-line" data-kind="pressure" :style="{ width: dashboardBarWidth(dashboard?.sistolicaPromedio, 260) }"></span><i class="dashboard-line-marker" :style="{ left: dashboardBarWidth(dashboard?.sistolicaPromedio, 260) }"></i></div><small>Escala visual: 0–260 mmHg</small></div>
+                        <div class="dashboard-average-row"><div><span>Presión diastólica</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.diastolicaPromedio) }} mmHg</strong></div><div class="dashboard-line-track" role="img" :aria-label="'Presión diastólica promedio: ' + formatDashboardMetric(dashboard?.diastolicaPromedio) + ' de 150 mmHg de escala'"><span class="dashboard-line" data-kind="pressure" :style="{ width: dashboardBarWidth(dashboard?.diastolicaPromedio, 150) }"></span><i class="dashboard-line-marker" :style="{ left: dashboardBarWidth(dashboard?.diastolicaPromedio, 150) }"></i></div><small>Escala visual: 0–150 mmHg</small></div>
                       </div>
-                      <small class="muted">Promedios por evaluación; resultados agregados sin mostrar datos individuales.</small>
+                      <p class="dashboard-chart-note">Cada línea ubica el promedio en su escala; no representa cambios en el tiempo.</p>
                     </div>
                   </article>
                 </div>
-              </div>
-              <div class="row g-3 mt-1 dashboard-charts">
-                <div class="col-12 col-lg-5">
-                  <article class="dashboard-chart-card card h-100">
+                <div class="dashboard-right-column">
+<article class="dashboard-chart-card dashboard-donut-card card h-100">
                     <div class="card-body">
-                      <p class="eyebrow mb-1">DISTRIBUCIÓN</p>
                       <h2 class="dashboard-chart-title">Semáforo global</h2>
+                      <div class="dashboard-breakdown dashboard-breakdown-inline"><div class="dashboard-breakdown-body">
+                      <div class="dashboard-results-total"><span class="eyebrow">Resultados calculados:</span> <strong class="dashboard-breakdown-total">{{ loading ? "—" : dashboard?.totalConResultado ?? 0 }}</strong></div>
+                      <div class="dashboard-signals">
+                        <span class="dashboard-signal urgent">Derivación inmediata <strong>{{ loading ? "—" : dashboard?.derivacionesInmediatas ?? 0 }}</strong></span>
+                      </div>
+                      <small class="muted">Resultados agrupados; no se muestran datos individuales.</small>
+                    </div></div>
                       <div class="dashboard-donut-layout">
                         <div class="dashboard-donut" :style="{ background: dashboardSignalChart }" role="img" :aria-label="dashboardSignalTotal + ' resultados clasificados por semáforo'">
                           <div><strong>{{ loading ? "—" : dashboardSignalTotal }}</strong><span>resultados</span></div>
@@ -480,22 +502,6 @@
                           <div><span class="dashboard-legend-dot" data-signal="ROJO"></span><span>Rojo</span><strong>{{ loading ? "—" : dashboard?.semaforoRojo ?? 0 }}</strong></div>
                         </div>
                       </div>
-                      <p class="dashboard-chart-note">Cantidad de resultados según el peor control registrado.</p>
-                    </div>
-                  </article>
-                </div>
-                <div class="col-12 col-lg-7">
-                  <article class="dashboard-chart-card card h-100">
-                    <div class="card-body">
-                      <p class="eyebrow mb-1">INDICADORES AGREGADOS</p>
-                      <h2 class="dashboard-chart-title">Promedios del grupo</h2>
-                      <div class="dashboard-average-chart">
-                        <div class="dashboard-average-row"><div><span>Edad</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.edadPromedio) }} años</strong></div><div class="dashboard-bar-track" role="img" :aria-label="'Edad promedio: ' + formatDashboardMetric(dashboard?.edadPromedio) + ' de 120 años de escala'"><span class="dashboard-bar" data-kind="age" :style="{ width: dashboardBarWidth(dashboard?.edadPromedio, 120) }"></span></div><small>Escala visual: 0–120 años</small></div>
-                        <div class="dashboard-average-row"><div><span>IMC</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.imcPromedio) }} kg/m²</strong></div><div class="dashboard-bar-track" role="img" :aria-label="'IMC promedio: ' + formatDashboardMetric(dashboard?.imcPromedio) + ' de 50 de escala'"><span class="dashboard-bar" data-kind="bmi" :style="{ width: dashboardBarWidth(dashboard?.imcPromedio, 50) }"></span></div><small>Escala visual: 0–50 kg/m²</small></div>
-                        <div class="dashboard-average-row"><div><span>Sistólica</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.sistolicaPromedio) }} mmHg</strong></div><div class="dashboard-bar-track" role="img" :aria-label="'Presión sistólica promedio: ' + formatDashboardMetric(dashboard?.sistolicaPromedio) + ' de 260 mmHg de escala'"><span class="dashboard-bar" data-kind="pressure" :style="{ width: dashboardBarWidth(dashboard?.sistolicaPromedio, 260) }"></span></div><small>Escala visual: 0–260 mmHg</small></div>
-                        <div class="dashboard-average-row"><div><span>Diastólica</span><strong>{{ loading ? "—" : formatDashboardMetric(dashboard?.diastolicaPromedio) }} mmHg</strong></div><div class="dashboard-bar-track" role="img" :aria-label="'Presión diastólica promedio: ' + formatDashboardMetric(dashboard?.diastolicaPromedio) + ' de 150 mmHg de escala'"><span class="dashboard-bar" data-kind="pressure" :style="{ width: dashboardBarWidth(dashboard?.diastolicaPromedio, 150) }"></span></div><small>Escala visual: 0–150 mmHg</small></div>
-                      </div>
-                      <p class="dashboard-chart-note">Cada barra usa su propia escala; los datos son promedios, no tendencias.</p>
                     </div>
                   </article>
                 </div>
@@ -504,20 +510,7 @@
                 <div>
                   <p class="eyebrow">CADA CONTROL CUENTA</p>
                   <h2>Prevenir hoy.<br />Cuidar el mañana.</h2>
-                  <p>
-                    Completá una evaluación integral para identificar<br
-                      class="d-none d-md-block"
-                    />
-                    factores de riesgo y orientar el cuidado.
-                  </p>
-                  <button
-                    type="button"
-                    class="btn btn-outline-primary"
-                    :disabled="loading || busy"
-                    @click="startDirectRegistration()"
-                  >
-                    Iniciar una evaluación <span aria-hidden="true">↗</span>
-                  </button>
+
                 </div>
                 <div class="hero-art" aria-hidden="true">
                   <span class="hero-heart">♡</span
@@ -526,7 +519,7 @@
               </section>
             </template>
 
-            <section class="panel card">
+            <section v-if="page !== 'inicio'" class="panel card">
               <div class="panel-head card-header">
                 <div>
                   <h2>
@@ -555,8 +548,8 @@
                     type="button"
                     class="btn btn-outline-secondary icon-button"
                     aria-label="Actualizar registros"
-                    :disabled="loading || busy"
-                    @click="reload()"
+                    :disabled="loading || busy || dashboardRefreshing"
+                    @click="page === 'inicio' ? refreshDashboard() : reload()"
                   >
                     <span aria-hidden="true">↻</span>
                   </button>
@@ -1406,7 +1399,7 @@
           </template>
           <footer class="workspace-footer">
             <span>PREVENCIÓN · SEGUIMIENTO · CUIDADO</span
-            ><span>Tamizaje / Salud comunitaria</span>
+            ><span>TamizApp / Salud comunitaria</span>
           </footer>
         </div>
       </main>

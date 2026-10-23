@@ -1336,3 +1336,352 @@
 .nurse-panel-head { align-items: flex-start; }
 .nurse-panel-head .nurse-new-button { align-self: flex-start; margin-left: auto; flex: 0 0 auto; }
 @media (max-width: 520px) { .nurse-panel-head .nurse-new-button { width: auto; } }
+
+
+/* Recomendaciones del resultado público TamizApp */
+.public-global-guidance { margin-top: 1.25rem; }
+.public-status { margin: 0; }
+.public-status-description { margin: .65rem 0 1rem; color: #65595d; }
+.public-recommendation { padding: 1rem; border: 1px solid #eadfe2; border-radius: .75rem; background: #faf8f8; }
+.public-recommendation h2 { margin: 0 0 .55rem; color: #3d0d1d; font-size: 1rem; }
+.public-recommendation h3 { margin: 1rem 0 .4rem; color: #4b0d1f; font-size: .92rem; }
+.public-recommendation p { line-height: 1.6; }
+.public-status[data-signal="AMARILLO"] + .public-status-description + .public-recommendation { border-color: #ecd89b; background: #fffaf0; }
+.public-status[data-signal="ROJO"] + .public-status-description + .public-recommendation { border-color: #efc7c5; background: #fff7f6; }
+.public-control-recommendation { flex: 1 0 100%; margin: -.25rem 0 .2rem; color: #65595d; font-size: .8rem; line-height: 1.5; }
+
+
+/* Recomendación global junto al semáforo y QR */
+.completion-signal-summary { max-width: 18rem; color: var(--ui-muted, #69766e); font-size: .8rem; line-height: 1.45; }
+.completion-recommendation { display: grid; gap: 1rem; margin: 1.15rem 0; padding: clamp(1rem, 2.5vw, 1.5rem); border: 1px solid var(--ui-border, #dce5df); border-radius: .85rem; background: var(--ui-surface, #fff); color: var(--ui-text, #20352b); }
+.completion-recommendation[data-signal="AMARILLO"] { border-color: #ecd89b; }
+.completion-recommendation[data-signal="ROJO"] { border-color: #efc7c5; }
+.completion-recommendation-main h3 { margin: 0 0 .8rem; font-size: 1.2rem; }
+.completion-recommendation[data-signal="AMARILLO"] .completion-recommendation-main h3 { color: #805b00; }
+.completion-recommendation[data-signal="ROJO"] .completion-recommendation-main h3 { color: #a31f2e; }
+
+
+/* Dashboard en pantalla completa; la navegación se oculta y queda la marca. */
+#app.app.dashboard-mode .workspace-sidebar { position: relative; inset: auto; width: 100%; min-height: 76px; flex-direction: row; align-items: center; overflow: visible; padding: .85rem clamp(1.25rem, 3vw, 2.6rem); border-right: 0; border-bottom: 1px solid var(--bs-border-color); background: var(--bs-body-bg); }
+#app.app.dashboard-mode .workspace-main { margin-left: 0; }
+#app.app.dashboard-mode .workspace-header { display: none; }
+#app.app.dashboard-mode .content { max-width: none; padding: 1.5rem clamp(1.25rem, 4vw, 3.5rem); }
+#app.app.dashboard-mode .page-heading { margin-bottom: 1rem; }
+.dashboard-refresh { display: flex; align-items: center; gap: .6rem; min-height: 2rem; margin: -.25rem 0 1rem; color: var(--bs-secondary-color); font-size: .8rem; }
+.dashboard-refresh-dot { width: .55rem; height: .55rem; flex: 0 0 auto; border-radius: 50%; background: var(--bs-primary); }
+.dashboard-refresh.is-refreshing .dashboard-refresh-dot { animation: dashboard-refresh-pulse .9s ease-in-out infinite alternate; }
+.dashboard-refresh.has-error { color: #b42318; }
+.dashboard-refresh.has-error .dashboard-refresh-dot { background: #c93636; }
+@keyframes dashboard-refresh-pulse { to { opacity: .35; transform: scale(.78); } }
+@media (max-width: 767.98px) { #app.app.dashboard-mode .workspace-sidebar { min-height: 68px; } #app.app.dashboard-mode .content { padding: 1rem; } .dashboard-refresh { align-items: flex-start; } }
+
+/* Ajustes de presentación del dashboard a pantalla completa. */
+#app.app.dashboard-mode .workspace-sidebar {
+  position: relative !important;
+  inset: auto !important;
+  display: flex !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  padding: 1rem clamp(1.25rem, 3vw, 2.6rem) !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+#app.app.dashboard-mode .workspace-main {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+#app.app.dashboard-mode .content {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  padding: 1rem clamp(1.25rem, 3vw, 2.6rem) 2rem !important;
+}
+#app.app.dashboard-mode .page-heading {
+  justify-content: center !important;
+  text-align: center !important;
+}
+#app.app.dashboard-mode .page-heading > div { margin-inline: auto; }
+#app.app.dashboard-mode .page-heading > button { position: absolute; right: clamp(1.25rem, 3vw, 2.6rem); }
+#app.app.dashboard-mode .brand-icon {
+  padding: 0 !important;
+  color: #c9363e !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  font-size: 2rem;
+}
+@media (max-width: 767.98px) {
+  #app.app.dashboard-mode .workspace-sidebar { padding: .75rem 1rem !important; }
+  #app.app.dashboard-mode .content { padding: .75rem 1rem 1.5rem !important; }
+  #app.app.dashboard-mode .page-heading { flex-direction: column; }
+  #app.app.dashboard-mode .page-heading > button { position: static; }
+}
+
+
+/* Encabezado de marca del dashboard a ancho completo. */
+#app.app.dashboard-mode .dashboard-brand { padding: 1rem clamp(1.25rem, 3vw, 2.6rem) 0; }
+#app.app.dashboard-mode .dashboard-brand .brand { width: max-content; }
+#app.app.dashboard-mode .dashboard-brand-icon {
+  padding: 0 !important;
+  color: #c9363e !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  font-size: 2rem;
+}
+
+/* Dashboard: single row of metrics, right aligned circular distribution, and line scales below. */
+.dashboard-stat-row > div { min-width: 0; }
+.dashboard-stat-row .stat { min-height: 9.5rem; }
+.dashboard-breakdown-row { margin-top: .75rem !important; }
+.dashboard-donut-card { max-width: 42rem; margin-left: auto; }
+.dashboard-donut-layout { min-height: 205px; }
+.dashboard-line-charts .dashboard-chart-card { min-height: 19rem; }
+.dashboard-line-charts .dashboard-average-chart { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem 2rem; }
+.dashboard-line-charts .dashboard-average-row { gap: .5rem; }
+.dashboard-line-track { position: relative; height: 4px; overflow: visible; border-radius: 99px; background: var(--ui-panel, #e8eff1); }
+.dashboard-line { display: block; height: 100%; border-radius: inherit; background: #315f73; }
+.dashboard-line[data-kind="bmi"] { background: #67577d; }
+.dashboard-line[data-kind="pressure"] { background: #c9363e; }
+.dashboard-line-marker { position: absolute; top: 50%; width: 13px; height: 13px; border: 3px solid var(--ui-surface, #fff); border-radius: 50%; background: #315f73; box-shadow: 0 0 0 1px currentColor; transform: translate(-50%, -50%); }
+.dashboard-line-marker[style*="left: 100%"] { transform: translate(-100%, -50%); }
+.dashboard-average-row:has(.dashboard-line[data-kind="bmi"]) .dashboard-line-marker { background: #67577d; }
+.dashboard-average-row:has(.dashboard-line[data-kind="pressure"]) .dashboard-line-marker { background: #c9363e; }
+@media (max-width: 767.98px) { .dashboard-line-charts .dashboard-average-chart { grid-template-columns: 1fr; } .dashboard-stat-row .stat { min-height: 8.5rem; } .dashboard-donut-card { max-width: none; } }
+
+/* Dashboard refinement: compact overview, averages left, traffic light right. */
+#app.app.dashboard-mode .dashboard-brand { padding: 1.35rem clamp(1.5rem, 3vw, 3rem) 0 !important; }
+#app.app.dashboard-mode .content { padding-top: .35rem !important; }
+#app.app.dashboard-mode .page-heading { margin-top: -.15rem; margin-bottom: .75rem !important; }
+#app.app.dashboard-mode .page-heading > button { display: none !important; }
+.dashboard-stat-row { margin-bottom: .8rem; }
+.dashboard-stat-row .stat { min-height: 7.1rem; }
+.dashboard-stat-row .stat .card-body { padding: 1rem 1.15rem; }
+.dashboard-stat-row .stat .card-body > strong { font-size: 1.65rem; line-height: 1.15; }
+.dashboard-stat-row .stat .card-body > small { margin-top: .25rem; }
+.dashboard-overview-row { align-items: stretch; }
+.dashboard-average-column .dashboard-chart-card { height: 100%; min-height: 15rem; }
+.dashboard-average-column .dashboard-chart-card .card-body { padding: 1.1rem 1.25rem; }
+.dashboard-average-column .dashboard-chart-title { margin-bottom: .7rem; }
+.dashboard-average-column .dashboard-average-chart { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.5rem; }
+.dashboard-average-column .dashboard-average-row { gap: .35rem; }
+.dashboard-donut-card { max-width: none; min-height: 15rem; margin: 0; }
+.dashboard-donut-card .card-body { padding: 1.1rem 1.25rem; }
+.dashboard-donut-layout { min-height: 150px; gap: 1rem; }
+.dashboard-donut { width: 122px; height: 122px; }
+.dashboard-donut > div { width: 82px; height: 82px; }
+.dashboard-donut strong { font-size: 1.3rem; }
+.dashboard-legend { min-width: 105px; gap: .55rem; }
+.dashboard-legend > div { font-size: .78rem; }
+.dashboard-chart-note { margin-top: .55rem; font-size: .68rem; }
+@media (max-width: 767.98px) { #app.app.dashboard-mode .dashboard-brand { padding: 1rem 1.25rem 0 !important; } #app.app.dashboard-mode .content { padding-top: .25rem !important; } .dashboard-stat-row .stat { min-height: 6.7rem; } .dashboard-average-column .dashboard-average-chart { grid-template-columns: 1fr; } .dashboard-donut { width: 112px; height: 112px; } .dashboard-donut > div { width: 76px; height: 76px; } }
+
+/* Dashboard final viewport fit and explicit logo spacing. */
+#app.app.dashboard-mode .dashboard-brand { margin: .75rem 0 0 clamp(1rem, 2vw, 2rem) !important; padding: 0 !important; }
+#app.app.dashboard-mode .dashboard-brand .brand { margin: 0; }
+#app.app.dashboard-mode .content { padding-top: 0 !important; padding-bottom: .75rem !important; }
+#app.app.dashboard-mode .page-heading { margin-top: -.55rem !important; margin-bottom: .5rem !important; }
+#app.app.dashboard-mode .page-heading > div > .muted { display: none !important; }
+#app.app.dashboard-mode .dashboard-refresh { min-height: 1.5rem; margin: 0 0 .55rem; }
+.dashboard-stat-row { margin-bottom: .45rem; }
+.dashboard-stat-row .stat { min-height: 6.3rem; }
+.dashboard-stat-row .stat .card-body { padding: .8rem 1rem; }
+.dashboard-breakdown-row { margin-top: .4rem !important; }
+.dashboard-breakdown .card-body { padding: .7rem 1rem; }
+.dashboard-overview-row { margin-top: .4rem !important; }
+.dashboard-average-column .dashboard-chart-card, .dashboard-donut-card { min-height: 12.2rem; }
+.dashboard-average-column .dashboard-chart-card .card-body, .dashboard-donut-card .card-body { padding: .85rem 1rem; }
+.dashboard-average-column .dashboard-average-chart { row-gap: .65rem; }
+.dashboard-donut-layout { min-height: 112px; }
+.dashboard-donut { width: 100px; height: 100px; }
+.dashboard-donut > div { width: 68px; height: 68px; }
+.dashboard-donut strong { font-size: 1.15rem; }
+#app.app.dashboard-mode .hero { min-height: 0; padding: 1rem 1.4rem; margin: .55rem 0 .5rem; }
+#app.app.dashboard-mode .hero h2 { margin: .35rem 0; font-size: 1.35rem; line-height: 1.2; }
+#app.app.dashboard-mode .hero p { margin: .35rem 0 .55rem; line-height: 1.45; }
+#app.app.dashboard-mode .hero .eyebrow { margin-bottom: .25rem; }
+#app.app.dashboard-mode .hero-art { width: 112px; height: 112px; margin-right: 1rem; border-width: 12px; box-shadow: 0 0 0 14px #e3eee5; gap: .35rem; }
+#app.app.dashboard-mode .hero-art .hero-heart { font-size: 2.8rem; }
+#app.app.dashboard-mode .hero-art span { font-size: .48rem; }
+#app.app.dashboard-mode footer { margin-top: .5rem; }
+@media (max-width: 767.98px) { #app.app.dashboard-mode .dashboard-brand { margin: .6rem 0 0 1rem !important; } #app.app.dashboard-mode .page-heading { margin-top: -.25rem !important; } #app.app.dashboard-mode .hero { padding: 1rem; } #app.app.dashboard-mode .hero-art { width: 88px; height: 88px; margin-right: .5rem; border-width: 9px; box-shadow: 0 0 0 10px #e3eee5; } #app.app.dashboard-mode .hero-art .hero-heart { font-size: 2rem; } }
+
+/* Compacto el bloque inspiracional del dashboard. */
+#app.app.dashboard-mode .hero { min-height: 0; padding: .55rem 1rem; margin: .4rem 0; }
+#app.app.dashboard-mode .hero h2 { margin: .2rem 0; font-size: 1.12rem; line-height: 1.15; }
+#app.app.dashboard-mode .hero .eyebrow { font-size: .52rem; }
+#app.app.dashboard-mode .hero-art { width: 76px; height: 76px; margin-right: .5rem; border-width: 8px; box-shadow: 0 0 0 9px #e3eee5; gap: .15rem; }
+#app.app.dashboard-mode .hero-art .hero-heart { font-size: 1.85rem; }
+#app.app.dashboard-mode .hero-art span { font-size: .38rem; }
+@media (max-width: 767.98px) { #app.app.dashboard-mode .hero { padding: .6rem .75rem; } #app.app.dashboard-mode .hero-art { width: 64px; height: 64px; border-width: 6px; box-shadow: 0 0 0 7px #e3eee5; } #app.app.dashboard-mode .hero-art .hero-heart { font-size: 1.5rem; } }
+
+/* Agrupa el resumen de resultados con su distribución por semáforo. */
+.dashboard-breakdown-inline { height: auto; margin: .45rem 0 .25rem; padding: .45rem .55rem; border: 1px solid var(--ui-border, #dce5df); border-radius: .65rem; background: var(--ui-panel, #f7f9f8); }
+.dashboard-breakdown-inline .dashboard-breakdown-body { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .4rem .65rem; }
+.dashboard-breakdown-inline .eyebrow { font-size: .52rem; }
+.dashboard-breakdown-inline .dashboard-breakdown-total { color: var(--ui-text, #20352b); font-size: .78rem; font-weight: 700; }
+.dashboard-breakdown-inline .dashboard-signals { gap: .3rem; }
+.dashboard-breakdown-inline .dashboard-signal { padding: .22rem .42rem; font-size: .65rem; }
+.dashboard-breakdown-inline .muted { display: none; }
+.dashboard-donut-card .dashboard-chart-note { margin-top: .35rem; }
+@media (max-width: 991.98px) { .dashboard-breakdown-inline .dashboard-breakdown-body { justify-content: flex-start; } }
+
+.dashboard-results-total { display: inline-flex; align-items: baseline; gap: .3rem; white-space: nowrap; }
+.dashboard-results-total .eyebrow { font-size: .62rem; }
+.dashboard-breakdown-inline .dashboard-breakdown-total { font-size: .9rem; font-weight: 800; }
+
+/* Amplía el panel circular y concentra los promedios en una columna menor. */
+.dashboard-average-column .dashboard-chart-card { min-height: 16rem; }
+.dashboard-average-column .dashboard-average-chart { grid-template-columns: 1fr; gap: .65rem; }
+.dashboard-donut-card { min-height: 16rem; }
+.dashboard-donut-card .dashboard-chart-title { margin-bottom: .35rem; font-size: 1.25rem; }
+.dashboard-donut-layout { min-height: 210px; justify-content: center; gap: clamp(1.25rem, 3vw, 3rem); }
+.dashboard-donut { width: 176px; height: 176px; }
+.dashboard-donut > div { width: 118px; height: 118px; }
+.dashboard-donut strong { font-size: 1.6rem; }
+.dashboard-donut span { font-size: .85rem; }
+.dashboard-legend { min-width: 145px; gap: .8rem; }
+.dashboard-legend > div { grid-template-columns: 14px 1fr auto; gap: .6rem; font-size: .95rem; }
+.dashboard-legend-dot { width: 13px; height: 13px; }
+@media (max-width: 991.98px) { .dashboard-average-column .dashboard-average-chart { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dashboard-donut { width: 150px; height: 150px; } .dashboard-donut > div { width: 102px; height: 102px; } }
+@media (max-width: 575.98px) { .dashboard-average-column .dashboard-average-chart { grid-template-columns: 1fr; } .dashboard-donut { width: 128px; height: 128px; } .dashboard-donut > div { width: 88px; height: 88px; } .dashboard-legend { min-width: 115px; } }
+
+/* Dashboard arranged to match the marked reference: two KPIs and averages on the left, large semaphore spanning the right. */
+.dashboard-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: stretch; }
+.dashboard-left-column { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: .75rem; min-width: 0; }
+.dashboard-stat-row { margin: 0 !important; }
+.dashboard-stat-row > div { min-width: 0; }
+.dashboard-stat-row .stat { min-height: 7.2rem; }
+.dashboard-average-card { min-height: 24rem; height: 100%; }
+.dashboard-average-card .card-body { padding: 1.1rem 1.25rem; }
+.dashboard-average-card .dashboard-average-chart { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.3rem; }
+.dashboard-right-column { min-width: 0; }
+.dashboard-right-column .dashboard-donut-card { display: flex; height: 100%; min-height: 32rem; max-width: none; margin: 0; }
+.dashboard-right-column .dashboard-donut-card > .card-body { display: flex; flex: 1; flex-direction: column; padding: 1.1rem 1.3rem; }
+.dashboard-right-column .dashboard-donut-card .dashboard-chart-title { font-size: 1.4rem; margin-bottom: .6rem; }
+.dashboard-right-column .dashboard-breakdown-inline { margin: .15rem 0 .75rem; padding: .7rem .8rem; }
+.dashboard-right-column .dashboard-breakdown-inline .eyebrow { font-size: .62rem; }
+.dashboard-right-column .dashboard-breakdown-inline .dashboard-breakdown-total { font-size: 1rem; }
+.dashboard-right-column .dashboard-breakdown-inline .dashboard-signal { padding: .35rem .55rem; font-size: .75rem; }
+.dashboard-right-column .dashboard-donut-layout { flex: 1; min-height: 0; justify-content: center; gap: clamp(1.5rem, 4vw, 4rem); }
+.dashboard-right-column .dashboard-donut { width: clamp(190px, 15vw, 250px); height: clamp(190px, 15vw, 250px); }
+.dashboard-right-column .dashboard-donut > div { width: 66%; height: 66%; }
+.dashboard-right-column .dashboard-donut strong { font-size: 2rem; }
+.dashboard-right-column .dashboard-donut span { font-size: .95rem; }
+.dashboard-right-column .dashboard-legend { min-width: 150px; gap: 1rem; }
+.dashboard-right-column .dashboard-legend > div { grid-template-columns: 15px 1fr auto; gap: .7rem; font-size: 1.05rem; }
+.dashboard-right-column .dashboard-legend-dot { width: 14px; height: 14px; }
+@media (max-width: 991.98px) { .dashboard-main-grid { grid-template-columns: 1fr; } .dashboard-right-column .dashboard-donut-card { min-height: 26rem; } .dashboard-right-column .dashboard-donut-layout { min-height: 17rem; } .dashboard-average-card { min-height: 20rem; } }
+@media (max-width: 575.98px) { .dashboard-stat-row .stat { min-height: 6.5rem; } .dashboard-average-card .dashboard-average-chart { grid-template-columns: 1fr; } .dashboard-right-column .dashboard-donut-layout { flex-direction: column; gap: 1rem; } .dashboard-right-column .dashboard-donut { width: 150px; height: 150px; } .dashboard-right-column .dashboard-donut strong { font-size: 1.5rem; } .dashboard-right-column .dashboard-legend { grid-template-columns: repeat(3, 1fr); min-width: 0; width: 100%; } .dashboard-right-column .dashboard-legend > div { grid-template-columns: 12px auto; gap: .35rem; font-size: .78rem; } }
+
+/* Keep the semaphore card as tall as its contents instead of stretching through blank space. */
+.dashboard-right-column { align-self: start; }
+.dashboard-right-column .dashboard-donut-card { height: auto !important; min-height: 0 !important; }
+.dashboard-right-column .dashboard-donut-card > .card-body { display: block; flex: initial; padding: 1.1rem 1.3rem 1rem; }
+.dashboard-right-column .dashboard-donut-layout { display: flex; min-height: 0; padding: .8rem .4rem .25rem; gap: clamp(1.5rem, 4vw, 4rem); }
+.dashboard-right-column .dashboard-donut { flex: 0 0 auto; width: clamp(190px, 15vw, 250px); height: clamp(190px, 15vw, 250px); }
+.dashboard-right-column .dashboard-legend { align-content: center; }
+.dashboard-right-column .dashboard-breakdown-inline { margin-bottom: .2rem; }
+@media (max-width: 991.98px) { .dashboard-right-column { align-self: stretch; } .dashboard-right-column .dashboard-donut-card { min-height: 0 !important; } .dashboard-right-column .dashboard-donut-layout { min-height: 0; } }
+@media (max-width: 575.98px) { .dashboard-right-column .dashboard-donut-layout { flex-direction: row; gap: 1rem; } .dashboard-right-column .dashboard-donut { width: 150px; height: 150px; } }
+
+/* Keep the metrics layout without stretching the averages card into empty space. */
+.dashboard-main-grid { align-items: start; }
+.dashboard-left-column { grid-template-rows: auto auto; align-content: start; height: max-content; }
+.dashboard-average-card { height: auto !important; min-height: 0 !important; }
+.dashboard-average-card .card-body { padding: .9rem 1rem; }
+.dashboard-average-card .dashboard-chart-title { margin-bottom: .45rem; }
+.dashboard-average-card .dashboard-average-chart { gap: .65rem 1rem; }
+.dashboard-average-card .dashboard-chart-note { margin-top: .35rem; }
+
+/* Align the semaphore card from the KPI row through the bottom of group averages, with no outer wrapper. */
+@media (min-width: 992px) {
+  .dashboard-main-grid { align-items: stretch !important; }
+  .dashboard-left-column { grid-template-rows: auto auto; align-content: stretch; height: auto; min-height: 0; }
+  .dashboard-right-column { align-self: stretch; display: flex; min-height: 0; padding-top: .85rem; }
+  .dashboard-right-column .dashboard-donut-card { display: flex; flex: 1 1 auto; width: 100%; height: 100% !important; min-height: 0 !important; }
+  .dashboard-right-column .dashboard-donut-card > .card-body { display: flex !important; flex: 1 1 auto !important; flex-direction: column; }
+  .dashboard-right-column .dashboard-donut-layout { flex: 1 1 auto; align-items: center; }
+}
+@media (max-width: 991.98px) {
+  .dashboard-main-grid { align-items: start; }
+  .dashboard-right-column { padding-top: 0; }
+  .dashboard-right-column .dashboard-donut-card { height: auto !important; }
+}
+
+/* Add breathing room around the brand and fit the closing hero below the dashboard. */
+#app.app.dashboard-mode .dashboard-brand { margin: .65rem 0 0 1rem !important; padding: .35rem 0 0 .5rem !important; }
+#app.app.dashboard-mode .dashboard-brand .brand { margin: 0 !important; padding: .25rem !important; }
+#app.app.dashboard-mode .hero { height: auto !important; min-height: 0 !important; margin: 1rem 0 .45rem !important; padding: .3rem .9rem !important; align-items: center; }
+#app.app.dashboard-mode .hero h2 { margin: .12rem 0 !important; font-size: 1.05rem !important; line-height: 1.1 !important; }
+#app.app.dashboard-mode .hero .eyebrow { margin: 0 0 .1rem !important; font-size: .48rem !important; }
+#app.app.dashboard-mode .hero-art { width: 54px !important; height: 54px !important; min-width: 54px; margin: 0 .5rem 0 0 !important; border-width: 4px !important; box-shadow: 0 0 0 5px #e3eee5 !important; gap: 0 !important; }
+#app.app.dashboard-mode .hero-art .hero-heart { font-size: 1.35rem !important; }
+#app.app.dashboard-mode .hero-art span { font-size: .3rem !important; }
+@media (max-width: 767.98px) { #app.app.dashboard-mode .dashboard-brand { margin-left: .75rem !important; padding-left: .35rem !important; } #app.app.dashboard-mode .hero { padding: .35rem .65rem !important; } #app.app.dashboard-mode .hero-art { width: 46px !important; height: 46px !important; min-width: 46px; } }
+
+
+/* Leave a clear gap between dashboard metrics and the closing hero. */
+#app.app.dashboard-mode .dashboard-main-grid { margin-bottom: 1.25rem !important; }
+#app.app.dashboard-mode .hero { margin-top: 0 !important; }
+
+
+/* Keep an actual gap between the dashboard cards and the green closing banner. */
+#app.app .dashboard-main-grid + .hero { border-top: 0 !important; background-clip: border-box !important; margin-top: 2.5rem !important; margin-bottom: .45rem !important; }
+
+
+/* Give the dashboard logo visible space from the top and left edges. */
+#app.app .dashboard-brand { padding: 16px 0 0 16px !important; }
+#app.app .dashboard-brand .brand { margin: 0 !important; padding: 0 !important; }
+
+
+/* Compact the closing banner so the dashboard fits a standard desktop viewport. */
+#app.app .dashboard-main-grid + .hero { min-height: 0 !important; padding: .55rem 1rem !important; margin: 2.5rem 0 .3rem !important; gap: 1rem !important; }
+#app.app .dashboard-main-grid + .hero h2 { margin: .12rem 0 !important; font-size: 1.35rem !important; line-height: 1.15 !important; }
+#app.app .dashboard-main-grid + .hero .eyebrow { margin: 0 0 .18rem !important; font-size: .58rem !important; }
+#app.app .dashboard-main-grid + .hero .hero-art { width: 160px !important; height: 160px !important; min-width: 160px !important; margin-right: .5rem !important; border-width: 11px !important; box-shadow: 0 0 0 12px #e3eee5 !important; gap: .15rem !important; }
+#app.app .dashboard-main-grid + .hero .hero-heart { font-size: 3.25rem !important; }
+#app.app .dashboard-main-grid + .hero .hero-art span { font-size: .42rem !important; }
+
+
+/* Compact dashboard spacing on shorter desktop viewports at 100% zoom. */
+@media (min-width: 992px) and (max-height: 800px) {
+  #app.app .content { padding-top: 0 !important; padding-bottom: 0 !important; }
+  #app.app .page-heading { margin-top: -.35rem !important; margin-bottom: .25rem !important; }
+  #app.app .dashboard-refresh { min-height: 1.2rem !important; margin: 0 0 .25rem !important; }
+  #app.app .dashboard-main-grid { gap: .65rem !important; }
+  #app.app .dashboard-left-column { gap: .5rem !important; }
+  #app.app .dashboard-stat-row { --bs-gutter-y: .45rem; }
+  #app.app .dashboard-stat-row .stat { min-height: 0 !important; }
+  #app.app .dashboard-stat-row .stat .card-body { padding: .48rem .75rem !important; }
+  #app.app .dashboard-stat-row .stat-label { margin-bottom: .12rem !important; font-size: .68rem !important; }
+  #app.app .dashboard-stat-row .stat strong { font-size: 1.3rem !important; line-height: 1.05 !important; }
+  #app.app .dashboard-stat-row .stat small { font-size: .6rem !important; }
+  #app.app .dashboard-average-card .card-body { padding: .5rem .7rem !important; }
+  #app.app .dashboard-average-card .dashboard-chart-title { margin: .1rem 0 .25rem !important; font-size: 1rem !important; }
+  #app.app .dashboard-average-card .dashboard-average-chart { gap: .35rem .7rem !important; }
+  #app.app .dashboard-average-card .dashboard-average-row { gap: .2rem !important; }
+  #app.app .dashboard-average-card .dashboard-average-row > div:first-child { font-size: .68rem; }
+  #app.app .dashboard-average-card .dashboard-average-row small { font-size: .55rem !important; }
+  #app.app .dashboard-average-card .dashboard-chart-note { margin-top: .2rem !important; font-size: .57rem !important; }
+  #app.app .dashboard-donut-card > .card-body { padding: .65rem .85rem !important; }
+  #app.app .dashboard-donut-card .dashboard-chart-title { margin-bottom: .3rem !important; font-size: 1.15rem !important; }
+  #app.app .dashboard-donut-card .dashboard-breakdown-inline { margin: .1rem 0 .25rem !important; padding: .35rem .5rem !important; }
+  #app.app .dashboard-donut-layout { min-height: 0 !important; padding: .15rem !important; gap: 1.2rem !important; }
+  #app.app .dashboard-donut { width: 190px !important; height: 190px !important; }
+  #app.app .dashboard-donut > div { width: 66% !important; height: 66% !important; }
+  #app.app .dashboard-legend { gap: .5rem !important; }
+  #app.app .dashboard-legend > div { font-size: .85rem !important; }
+  #app.app .dashboard-main-grid + .hero { margin-top: 2.5rem !important; }
+  #app.app footer { margin-top: .35rem !important; }
+}
+
+
+/* Keep the heart icon prominent; the tiny caption style must not shrink it. */
+@media (min-width: 992px) { #app.app .dashboard-main-grid + .hero .hero-art .hero-heart { font-size: 4rem !important; line-height: 1 !important; } }
+
+/* Make the closing banner caption readable inside its badge. */
+@media (min-width: 992px) { #app.app .dashboard-main-grid + .hero .hero-art > span:not(.hero-heart) { font-size: .68rem !important; line-height: 1.1 !important; letter-spacing: .035rem !important; font-weight: 600 !important; text-align: center !important; } }

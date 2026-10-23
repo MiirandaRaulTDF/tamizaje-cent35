@@ -4,6 +4,7 @@ import {
   reactive,
   computed,
   onMounted,
+  onUnmounted,
   nextTick,
   watch,
 } from "../vendor/vue/vue.esm-browser.prod.js";
@@ -47,6 +48,45 @@ function freshDirectForm() {
       tiposAntecedentes: [],
       antecedentesFamiliares: [],
     },
+  };
+}
+
+
+function globalGuidanceFor(signal, urgent) {
+  if (urgent) return {
+    title: "Rojo urgente · Atención inmediata",
+    description: "Se detectó un criterio de urgencia según las reglas de esta jornada.",
+    recommendation: "El resultado requiere atención inmediata. Avisá al profesional o docente responsable del puesto y seguí sus indicaciones para acceder a la atención necesaria.",
+    whyTitle: "¿Por qué actuar ahora?",
+    why: "Algunas alteraciones importantes pueden necesitar evaluación rápida. La prioridad y la conducta deben ser definidas por Enfermería. Si hay síntomas graves, se debe solicitar asistencia de emergencia.",
+  };
+  if (signal === "ROJO") return {
+    title: "Rojo · Se recomienda una evaluación profesional",
+    description: "Al menos un control alcanzó un criterio de alerta.",
+    recommendation: "Uno o más resultados alcanzaron un nivel de alerta establecido para esta jornada. Te recomendamos acudir a un centro de salud para que un profesional evalúe las mediciones y determine los pasos a seguir.",
+    whyTitle: "¿Por qué consultar?",
+    why: "Una medición alterada puede requerir confirmación, seguimiento o estudios complementarios. El tamizaje identifica señales que merecen atención, pero no confirma un diagnóstico.",
+  };
+  if (signal === "AMARILLO") return {
+    title: "Amarillo · Conviene realizar un control",
+    description: "Uno o más resultados requieren seguimiento.",
+    recommendation: "Uno o más controles presentaron valores que conviene revisar. Esto no significa que tengas una enfermedad; es una oportunidad para conocer mejor tu estado de salud. Te recomendamos solicitar una consulta en un centro de salud.",
+    whyTitle: "¿Por qué consultar?",
+    why: "Algunos factores de riesgo pueden no producir síntomas. Un profesional puede interpretar tus resultados junto con tus antecedentes y ayudarte a decidir qué seguimiento necesitás.",
+  };
+  if (signal === "VERDE") return {
+    title: "Verde · Resultado favorable",
+    description: "No se detectaron alertas en los controles realizados.",
+    recommendation: "Tus resultados se encuentran dentro de los rangos considerados favorables para los controles realizados. Seguí cuidando tu salud mediante una alimentación equilibrada, actividad física regular, evitando el tabaco y realizando controles preventivos.",
+    whyTitle: "¿Necesitás ir a un hospital o clínica?",
+    why: "Este resultado no indica una derivación obligatoria por los controles realizados. Sin embargo, no descarta todas las enfermedades ni reemplaza una evaluación médica. Si tenés síntomas, antecedentes relevantes o dudas sobre tu salud, consultá con un profesional.",
+  };
+  return {
+    title: "Resultado no disponible",
+    description: "No se pudo clasificar el resultado global.",
+    recommendation: "Compartí este resultado con el equipo de salud para recibir orientación.",
+    whyTitle: "Información",
+    why: "El tamizaje es orientativo y no reemplaza una consulta profesional.",
   };
 }
 
@@ -115,6 +155,9 @@ createApp({
       () => (directStep.value + 1) / directSteps.length,
     );
     const dashboard = ref(null);
+    const dashboardRefreshing = ref(false);
+    const dashboardRefreshError = ref("");
+    const dashboardUpdatedAt = ref(null);
     const dashboardSignalTotal = computed(() =>
       Number(dashboard.value?.semaforoVerde || 0) +
       Number(dashboard.value?.semaforoAmarillo || 0) +
@@ -144,6 +187,13 @@ createApp({
         ? "Pendiente"
         : label(directGlobalSignal.value),
     );
+    const directResultGuidance = computed(() =>
+      globalGuidanceFor(
+        directGlobalSignal.value,
+        Boolean(directSaved.value?.resultado?.derivacionInmediata),
+      ),
+    );
+
     const directConsultUrl = computed(() => {
       const token = directSaved.value?.tokenConsulta;
       return token
@@ -187,7 +237,7 @@ createApp({
     const sections = [
       { key: "registro", title: "Registro por pasos", icon: "＋" },
       { key: "inicio", title: "Resumen", icon: "◈" },
-      { key: "tamizajes", title: "Tamizajes", icon: "▤" },
+      { key: "tamizajes", title: "Historial de tamizajes", icon: "▤" },
       { key: "pacientes", title: "Pacientes", icon: "♧" },
       { key: "equipo", title: "Equipo de salud", icon: "✚" },
     ];
@@ -336,6 +386,9 @@ createApp({
     );
     let registrationModal, launcher;
     let reloadVersion = 0;
+    let dashboardInterval = null;
+    let dashboardRequestId = 0;
+    let dashboardRefreshPromise = null;
 
     function resetDirectRegistration() {
       const previousOperator = directSaved.value?.operador?.id;
@@ -496,6 +549,47 @@ createApp({
       } finally {
         if (version === reloadVersion) loading.value = false;
       }
+    }
+    async function refreshDashboard() {
+      if (page.value !== "inicio" || dashboardRefreshPromise || document.visibilityState === "hidden") return;
+      const requestId = ++dashboardRequestId;
+      dashboardRefreshing.value = true;
+      dashboardRefreshError.value = "";
+      dashboardRefreshPromise = Promise.all([request("/pacientes"), request("/enfermeros"), request("/tamizajes"), request("/dashboard/resumen")]);
+      try {
+        const [newPatients, newStaff, newRecords, newDashboard] = await dashboardRefreshPromise;
+        if (requestId !== dashboardRequestId || page.value !== "inicio") return;
+        patients.value = newPatients;
+        staff.value = newStaff;
+        records.value = newRecords;
+        dashboard.value = newDashboard;
+        dashboardUpdatedAt.value = new Date();
+      } catch (error) {
+        if (requestId === dashboardRequestId && page.value === "inicio") dashboardRefreshError.value = error.message;
+      } finally {
+        if (requestId === dashboardRequestId) {
+          dashboardRefreshPromise = null;
+          dashboardRefreshing.value = false;
+        }
+      }
+    }
+    function onDashboardVisibilityChange() {
+      if (document.visibilityState === "visible" && page.value === "inicio") refreshDashboard();
+    }
+    function stopDashboardRefresh() {
+      if (dashboardInterval !== null) window.clearInterval(dashboardInterval);
+      dashboardInterval = null;
+      dashboardRequestId += 1;
+      dashboardRefreshPromise = null;
+      dashboardRefreshing.value = false;
+      document.removeEventListener("visibilitychange", onDashboardVisibilityChange);
+    }
+    function startDashboardRefresh() {
+      stopDashboardRefresh();
+      dashboardRefreshError.value = "";
+      refreshDashboard();
+      dashboardInterval = window.setInterval(refreshDashboard, 60_000);
+      document.addEventListener("visibilitychange", onDashboardVisibilityChange);
     }
     async function openModal(kind, entity = null) {
       if (busy.value) return;
@@ -823,6 +917,10 @@ createApp({
       }
       if (result.value) window.print();
     }
+    watch(page, (nextPage) => {
+      if (nextPage === "inicio") startDashboardRefresh();
+      else stopDashboardRefresh();
+    });
     watch(tab, () => {
       formError.value = "";
     });
@@ -868,6 +966,7 @@ createApp({
       } else if (sections.some((section) => section.key === hash))
         navigate(hash);
     });
+    onUnmounted(stopDashboardRefresh);
     return {
       theme,
       page,
@@ -883,6 +982,7 @@ createApp({
       directSaved,
       directGlobalSignal,
       directGlobalSignalLabel,
+      directResultGuidance,
       directConsultUrl,
       directQrImageUrl,
       qrNeedsNetworkAddress,
@@ -911,6 +1011,10 @@ createApp({
       staff,
       records,
       dashboard,
+      dashboardRefreshing,
+      dashboardRefreshError,
+      dashboardUpdatedAt,
+      refreshDashboard,
       dashboardSignalTotal,
       dashboardSignalChart,
       dashboardBarWidth,

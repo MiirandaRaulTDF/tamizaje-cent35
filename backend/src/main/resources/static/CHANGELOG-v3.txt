@@ -1,0 +1,4 @@
+Integración Tamizapp 3.0 sobre la base preparada para Railway y Neon.
+Se incorporaron cambios de interfaz, orientación del resultado global y actualización automática del dashboard.
+Las entidades Java/JPA no cambiaron: no se requiere migración ni ajuste de tablas en Neon.
+La configuración PostgreSQL/Railway original se conservó.

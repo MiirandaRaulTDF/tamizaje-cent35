@@ -1,0 +1,20 @@
+ACTUALIZACION TAMIZAPP 3.0
+
+Esta carpeta conserva la configuración ya preparada para Railway + Neon.
+El backend Java y las entidades JPA coinciden con la versión anterior, por lo
+que esta actualización no requiere cambiar Neon ni crear/migrar tablas.
+
+Para publicar:
+1. Abrir PowerShell.
+2. Ejecutar:
+   cd "C:\Users\Raul Miranda\Desktop\Tamizaje-CENT35-v3-Railway"
+   git status
+   git add -A
+   git commit -m "Integrar mejoras TamizApp 3.0"
+   git push origin main
+3. Esperar en Railway a que el nuevo Deployment figure como Successful.
+4. Recargar el sitio con Ctrl+F5.
+
+No cambiar las variables SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME ni
+SPRING_DATASOURCE_PASSWORD en Railway. No subir esta carpeta desde GitHub web;
+el repositorio existente ya está enlazado en esta copia local.

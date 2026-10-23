@@ -4,15 +4,77 @@ const error = document.getElementById("public-error");
 const content = document.getElementById("public-content");
 document.getElementById("public-print")?.addEventListener("click", () => window.print());
 
-function titleFor(signal) {
-  return ({
-    VERDE: "Sin alerta prioritaria",
-    AMARILLO: "Requiere seguimiento",
-    ROJO: "Requiere atención del equipo de salud",
-    SIN_CLASIFICAR: "Resultado no disponible",
-  })[signal] || "Resultado de tu control";
+function guidanceFor(signal, urgent) {
+  if (urgent) return {
+    title: "Rojo urgente · Atención inmediata",
+    description: "Se detectó un criterio de urgencia según las reglas de esta jornada.",
+    recommendation: "El resultado requiere atención inmediata. Avisá al profesional o docente responsable del puesto y seguí sus indicaciones para acceder a la atención necesaria.",
+    whyTitle: "¿Por qué actuar ahora?",
+    why: "Algunas alteraciones importantes pueden necesitar evaluación rápida. La prioridad y la conducta deben ser definidas por Enfermería. Si hay síntomas graves, se debe solicitar asistencia de emergencia.",
+  };
+  if (signal === "ROJO") return {
+    title: "Rojo · Se recomienda una evaluación profesional",
+    description: "Al menos un control alcanzó un criterio de alerta.",
+    recommendation: "Uno o más resultados alcanzaron un nivel de alerta establecido para esta jornada. Te recomendamos acudir a un centro de salud para que un profesional evalúe las mediciones y determine los pasos a seguir.",
+    whyTitle: "¿Por qué consultar?",
+    why: "Una medición alterada puede requerir confirmación, seguimiento o estudios complementarios. El tamizaje identifica señales que merecen atención, pero no confirma un diagnóstico.",
+  };
+  if (signal === "AMARILLO") return {
+    title: "Amarillo · Conviene realizar un control",
+    description: "Uno o más resultados requieren seguimiento.",
+    recommendation: "Uno o más controles presentaron valores que conviene revisar. Esto no significa que tengas una enfermedad; es una oportunidad para conocer mejor tu estado de salud. Te recomendamos solicitar una consulta en un centro de salud.",
+    whyTitle: "¿Por qué consultar?",
+    why: "Algunos factores de riesgo pueden no producir síntomas. Un profesional puede interpretar tus resultados junto con tus antecedentes y ayudarte a decidir qué seguimiento necesitás.",
+  };
+  if (signal === "VERDE") return {
+    title: "Verde · Resultado favorable",
+    description: "No se detectaron alertas en los controles realizados.",
+    recommendation: "Tus resultados se encuentran dentro de los rangos considerados favorables para los controles realizados. Seguí cuidando tu salud mediante una alimentación equilibrada, actividad física regular, evitando el tabaco y realizando controles preventivos.",
+    whyTitle: "¿Necesitás ir a un hospital o clínica?",
+    why: "Este resultado no indica una derivación obligatoria por los controles realizados. Sin embargo, no descarta todas las enfermedades ni reemplaza una evaluación médica. Si tenés síntomas, antecedentes relevantes o dudas sobre tu salud, consultá con un profesional.",
+  };
+  return {
+    title: "Resultado no disponible",
+    description: "No se pudo clasificar el resultado global.",
+    recommendation: "Compartí este resultado con el equipo de salud para recibir orientación.",
+    whyTitle: "Información",
+    why: "El tamizaje es orientativo y no reemplaza una consulta profesional.",
+  };
 }
 
+function controlRecommendation(kind, signal, result) {
+  if (kind === "imc") {
+    const imc = Number.parseFloat(String(result.valorImc || "").replace(",", "."));
+    if (signal === "VERDE") return "Tu IMC está dentro del rango de referencia usado por el sistema. Este indicador debe interpretarse junto con otros aspectos de tu salud.";
+    if (signal === "AMARILLO" && Number.isFinite(imc) && imc < 18.5) return "Tu IMC está por debajo del rango de referencia. Una consulta profesional puede ayudar a evaluar tu situación nutricional y determinar si necesitás seguimiento.";
+    if (signal === "AMARILLO") return "Tu IMC está por encima del rango de referencia. Podés consultar para evaluar tu salud y recibir orientación sobre hábitos adecuados para vos.";
+    if (signal === "ROJO") return "Tu IMC alcanzó un nivel que merece una evaluación más detallada. Un profesional puede interpretarlo junto con tu cintura, antecedentes y otros indicadores.";
+  }
+  if (kind === "waist") {
+    if (signal === "VERDE") return "Tu perímetro de cintura está por debajo del umbral de alerta usado. Mantené tus hábitos saludables y continuá con tus controles preventivos.";
+    if (signal === "AMARILLO") return "Tu perímetro de cintura se encuentra en un nivel que conviene revisar. Podés consultar con un profesional para recibir orientación preventiva.";
+    if (signal === "ROJO") return "Tu perímetro de cintura alcanzó un criterio de alerta. Te recomendamos consultar en un centro de salud para evaluar este resultado junto con los demás factores de riesgo.";
+  }
+  if (kind === "pressure") {
+    if (result.derivacionInmediata) return "La medición alcanzó un criterio de urgencia. Avisá inmediatamente al responsable del puesto para recibir indicaciones de atención.";
+    if (signal === "VERDE") return "Esta medición está por debajo de los umbrales de alerta usados. Una medición aislada no descarta problemas de presión; mantené tus controles habituales.";
+    if (signal === "AMARILLO") return "La medición alcanzó un valor que conviene controlar. Te recomendamos consultar para revisar el resultado y determinar si es necesario repetirla.";
+    if (signal === "ROJO") return "La medición alcanzó un criterio de alerta. Es importante que un profesional evalúe el resultado y determine el seguimiento necesario.";
+  }
+  return "";
+}
+
+function findriscRecommendation(category) {
+  const messages = {
+    BAJO: "Según el puntaje obtenido, el riesgo estimado se encuentra en la categoría baja de esta evaluación. Mantené hábitos saludables y continuá con tus controles preventivos.",
+    LIGERAMENTE_ELEVADO: "El puntaje indica un riesgo ligeramente elevado según esta evaluación. Revisá tus hábitos de actividad física y alimentación, y mantené controles periódicos.",
+    MODERADO: "El puntaje indica un riesgo moderado según esta evaluación. Podés solicitar un control de glucemia en un centro de salud y conversar con un profesional sobre tus factores de riesgo.",
+    ALTO: "El puntaje indica un riesgo alto según esta evaluación. Solicitá una evaluación profesional y consultá si corresponde realizar un control de glucemia.",
+    MUY_ALTO: "El puntaje se encuentra en la categoría muy alta de esta evaluación. Te recomendamos gestionar una consulta para evaluar tus factores de riesgo y definir si necesitás estudios adicionales.",
+  };
+  const key = String(category || "").toLocaleUpperCase("es").replaceAll(" ", "_");
+  return messages[key] || "";
+}
 function labelFor(value) {
   if (!value) return "No disponible";
   return String(value)
@@ -58,9 +120,14 @@ if (!token || !/^[a-f0-9]{32}$/i.test(token)) {
     const result = await response.json();
     document.getElementById("public-record").textContent = `#${result.idRegistro}`;
     const status = document.getElementById("public-status");
-    status.textContent = titleFor(result.semaforoGlobal);
-    status.dataset.signal = result.semaforoGlobal;
     const signal = result.derivacionInmediata ? "ROJO" : result.semaforoGlobal;
+    const guidance = guidanceFor(result.semaforoGlobal, result.derivacionInmediata);
+    status.textContent = guidance.title;
+    status.dataset.signal = signal;
+    document.getElementById("public-status-description").textContent = guidance.description;
+    document.getElementById("public-recommendation").textContent = guidance.recommendation;
+    document.getElementById("public-why-title").textContent = guidance.whyTitle;
+    document.getElementById("public-why").textContent = guidance.why;
     document.querySelectorAll(".traffic-light-lamp").forEach((lamp) => {
       const active = lamp.dataset.signal === signal;
       lamp.classList.toggle("active", active);
@@ -70,17 +137,29 @@ if (!token || !/^[a-f0-9]{32}$/i.test(token)) {
       "aria-label",
       `Semáforo global: ${labelFor(signal)}`,
     );
-    if (result.derivacionInmediata) {
-      status.textContent = "Derivación inmediata indicada";
-      status.dataset.signal = "ROJO";
-    }
     setDetail("public-findrisc", result.categoriaFindrisc);
     setMeasurement("public-imc", result.valorImc ? `${result.valorImc} kg/m²` : null, result.semaforoImc);
     setMeasurement("public-pressure", result.valorPresion, result.semaforoPresion);
     setMeasurement("public-waist", result.valorCintura, result.semaforoCintura);
+    const scoreNote = document.getElementById("public-findrisc-note");
+    const scoreRecommendation = findriscRecommendation(result.categoriaFindrisc);
+    if (scoreRecommendation) {
+      scoreNote.textContent = `${scoreRecommendation} Este puntaje adaptado no mide la glucemia ni confirma diabetes; el control, si corresponde, se realiza en un centro de salud.`;
+      scoreNote.hidden = false;
+    }
+    [
+      ["public-imc-note", controlRecommendation("imc", result.semaforoImc, result)],
+      ["public-waist-note", controlRecommendation("waist", result.semaforoCintura, result)],
+      ["public-pressure-note", controlRecommendation("pressure", result.semaforoPresion, result)],
+    ].forEach(([id, message]) => {
+      const note = document.getElementById(id);
+      if (message) {
+        note.textContent = message;
+        note.hidden = false;
+      }
+    });
     const cvText = String(result.riesgoCardiovascular || "").replace(/^MODO_SIMPLIFICADO_FACTORES_(\d+)$/, (_, total) => `${total} ${total === "1" ? "factor identificado" : "factores identificados"} · evaluación simplificada`);
     setDetail("public-cv", cvText);
-    document.getElementById("public-recommendation").textContent = result.recomendacion;
     loading.hidden = true;
     content.hidden = false;
   } catch {
