@@ -74,6 +74,13 @@ function globalGuidanceFor(signal, urgent) {
     whyTitle: "¿Por qué consultar?",
     why: "Algunos factores de riesgo pueden no producir síntomas. Un profesional puede interpretar tus resultados junto con tus antecedentes y ayudarte a decidir qué seguimiento necesitás.",
   };
+  if (signal === "NARANJA") return {
+    title: "Naranja · Conviene una evaluación profesional",
+    description: "El promedio de los indicadores muestra varias señales que conviene revisar.",
+    recommendation: "El resultado combina distintos niveles de alerta. Consultá con un profesional para revisar cada medición y definir el seguimiento adecuado.",
+    whyTitle: "¿Cómo se obtiene este color?",
+    why: "El color global promedia los controles disponibles. Las alertas rojas individuales y los criterios de atención inmediata se siguen mostrando por separado.",
+  };
   if (signal === "VERDE") return {
     title: "Verde · Resultado favorable",
     description: "No se detectaron alertas en los controles realizados.",
@@ -161,6 +168,7 @@ createApp({
     const dashboardSignalTotal = computed(() =>
       Number(dashboard.value?.semaforoVerde || 0) +
       Number(dashboard.value?.semaforoAmarillo || 0) +
+      Number(dashboard.value?.semaforoNaranja || 0) +
       Number(dashboard.value?.semaforoRojo || 0)
     );
     const dashboardSignalChart = computed(() => {
@@ -168,8 +176,23 @@ createApp({
       if (!total) return "conic-gradient(#e7ece8 0deg 360deg)";
       const green = Number(dashboard.value?.semaforoVerde || 0) / total * 360;
       const yellow = green + Number(dashboard.value?.semaforoAmarillo || 0) / total * 360;
-      return `conic-gradient(#278455 0deg ${green}deg, #e7ad28 ${green}deg ${yellow}deg, #c9363e ${yellow}deg 360deg)`;
+      const orange = yellow + Number(dashboard.value?.semaforoNaranja || 0) / total * 360;
+      return `conic-gradient(#278455 0deg ${green}deg, #e7ad28 ${green}deg ${yellow}deg, #e97824 ${yellow}deg ${orange}deg, #c9363e ${orange}deg 360deg)`;
     });
+    const signalStyle = (score) => {
+      const value = Number(score);
+      if (!Number.isFinite(value)) return {};
+      const stops = [[0, 145, 76, 91], [.75, 60, 88, 86], [1, 32, 88, 85], [2, 10, 76, 82], [3, 0, 72, 75]];
+      const bounded = Math.min(3, Math.max(0, value));
+      const upper = stops.findIndex(([at]) => at >= bounded);
+      const [fromAt, fromHue, fromSat, fromLight] = stops[Math.max(0, upper - 1)];
+      const [toAt, toHue, toSat, toLight] = stops[Math.max(0, upper)];
+      const amount = toAt === fromAt ? 0 : (bounded - fromAt) / (toAt - fromAt);
+      const hue = Math.round(fromHue + (toHue - fromHue) * amount);
+      const saturation = Math.round(fromSat + (toSat - fromSat) * amount);
+      const lightness = Math.round(fromLight + (toLight - fromLight) * amount);
+      return { backgroundColor: `hsl(${hue} ${saturation}% ${lightness}%)`, color: `hsl(${hue} ${Math.min(75, saturation)}% 27%)`, borderColor: `hsl(${hue} ${Math.min(65, saturation)}% ${Math.max(45, lightness - 17)}%)` };
+    };
     const dashboardBarWidth = (value, maximum) => {
       const numeric = Number(value);
       if (!Number.isFinite(numeric) || numeric <= 0) return "0%";
@@ -982,6 +1005,7 @@ createApp({
       directSaved,
       directGlobalSignal,
       directGlobalSignalLabel,
+      signalStyle,
       directResultGuidance,
       directConsultUrl,
       directQrImageUrl,

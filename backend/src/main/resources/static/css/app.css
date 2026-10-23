@@ -978,10 +978,12 @@
 .completion-traffic-light { display: flex; align-items: center; gap: .55rem; padding: .55rem .7rem; border: 1px solid #d7dfda; border-radius: 999px; background: #f5f7f5; }
 .completion-lamp { width: 1.8rem; height: 1.8rem; border: 2px solid rgba(20, 30, 24, .2); border-radius: 50%; opacity: .3; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 .completion-lamp[data-signal="ROJO"] { background: #c9363e; }
+.completion-lamp[data-signal="NARANJA"] { background: #e97824; }
 .completion-lamp[data-signal="AMARILLO"] { background: #e7ad28; }
 .completion-lamp[data-signal="VERDE"] { background: #278455; }
 .completion-lamp.active { opacity: 1; border-color: rgba(20, 30, 24, .55); box-shadow: 0 0 0 3px rgba(39, 132, 85, .14); }
 .completion-signal[data-signal="ROJO"] strong { color: #a31f2e; }
+.completion-signal[data-signal="NARANJA"] strong { color: #a94d11; }
 .completion-signal[data-signal="AMARILLO"] strong { color: #805b00; }
 .completion-signal[data-signal="VERDE"] strong { color: #236c45; }
 .completion-signal[data-signal="SIN_CLASIFICAR"] strong { color: #68736d; }
@@ -1000,6 +1002,7 @@
 .dashboard-legend > div { display: grid; grid-template-columns: 12px 1fr auto; align-items: center; gap: .5rem; font-size: .84rem; }
 .dashboard-legend-dot { width: 11px; height: 11px; border-radius: 50%; background: #278455; }
 .dashboard-legend-dot[data-signal="AMARILLO"] { background: #e7ad28; }
+.dashboard-legend-dot[data-signal="NARANJA"] { background: #e97824; }
 .dashboard-legend-dot[data-signal="ROJO"] { background: #c9363e; }
 .dashboard-chart-note { margin: .9rem 0 0; color: var(--ui-muted, #69766e); font-size: .74rem; line-height: 1.45; }
 .dashboard-average-chart { display: grid; gap: .8rem; }
@@ -1079,6 +1082,7 @@
 .public-details dd { margin: 0; text-align: right; font-size: 0.88rem; font-weight: 650; }
 .public-detail-signal { display: inline-block; margin-left: .4rem; padding: .12rem .5rem; border-radius: 999px; background: #e7f4ed; color: #1a6648; font-size: .78em; font-weight: 700; }
 .public-detail-signal[data-signal="AMARILLO"] { background: #fff6dc; color: #795800; }
+.public-detail-signal[data-signal="NARANJA"] { background: #ffeadb; color: #9b4b15; }
 .public-detail-signal[data-signal="ROJO"] { background: #fce7e5; color: #8f1827; }
 .public-status {
   margin: 1.3rem 0;
@@ -1090,6 +1094,7 @@
   font-weight: 700;
 }
 .public-status[data-signal="AMARILLO"] { background: #fff6dc; color: #795800; }
+.public-status[data-signal="NARANJA"] { background: #ffeadb; color: #9b4b15; }
 .public-status[data-signal="ROJO"] { background: #fce7e5; color: #8f1827; }
 .public-status[data-signal="SIN_CLASIFICAR"] { background: #f2eff0; color: #51474b; }
 .public-traffic-light { display: flex; align-items: center; justify-content: center; gap: 1rem; width: fit-content; margin: 1rem auto; padding: .8rem 1.1rem; border: 1px solid #d7dfda; border-radius: 999px; background: #f5f7f5; }
@@ -1335,6 +1340,14 @@
 
 .nurse-panel-head { align-items: flex-start; }
 .nurse-panel-head .nurse-new-button { align-self: flex-start; margin-left: auto; flex: 0 0 auto; }
+.dashboard-signal.referral { background: #fff1e7; color: #9b4b15; }
+.dashboard-legend-dot[data-signal="NARANJA"] { background: #e97824; }
+.completion-lamp[data-signal="NARANJA"], .traffic-light-lamp[data-signal="NARANJA"] { background: #e97824; }
+.completion-signal[data-signal="NARANJA"] strong { color: #a94d11; }
+#app.app .completion-traffic-light { background: linear-gradient(90deg, #e3f1e8, #fff4cf 38%, #ffe4cf 68%, #f6dfe0); }
+.public-status[data-signal="NARANJA"] + .public-status-description + .public-recommendation { border-color: #f0c29f; background: #fff8f2; }
+.signal-orange { background: #ffeadb; color: #9b4b15; border: 1px solid #f1bd97; }
+.status-badge.signal-orange { font-weight: 700; }
 @media (max-width: 520px) { .nurse-panel-head .nurse-new-button { width: auto; } }
 
 

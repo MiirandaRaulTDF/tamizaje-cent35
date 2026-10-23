@@ -155,6 +155,7 @@ export function badgeClass(value) {
     {
       VERDE: "text-bg-success",
       AMARILLO: "text-bg-warning",
+      NARANJA: "signal-orange",
       ROJO: "text-bg-danger",
     }[value] || "text-bg-secondary"
   );

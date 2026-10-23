@@ -25,6 +25,7 @@ public class ResultadoTamizajeService {
         resultado.setPuntaje_findrisc(puntaje);
         resultado.setCategoria_findrisc(findriscService.clasificarPuntaje(puntaje));
         resultado.setSemaforo_imc(tamizaje.clasificarIMC());
+        resultado.setSemaforo_cintura(tamizaje.clasificarCintura());
         resultado.setSemaforo_presion(tamizaje.clasificarPresion());
         resultado.setRiesgo_cv(tamizaje.calcularRiesgoCardiovascularSimplificado());
         resultado.setSemaforo_riesgo_cv(tamizaje.clasificarRiesgoCardiovascularSimplificado());

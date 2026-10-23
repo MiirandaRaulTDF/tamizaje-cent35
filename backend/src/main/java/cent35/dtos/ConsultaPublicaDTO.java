@@ -6,6 +6,7 @@ import cent35.models.ResultadosTamizaje;
 public class ConsultaPublicaDTO {
     private final String idRegistro;
     private final String semaforoGlobal;
+    private final double promedioSemaforo;
     private final boolean derivacionInmediata;
     private final boolean deriva;
     private final String recomendacion;
@@ -22,16 +23,21 @@ public class ConsultaPublicaDTO {
 
     public ConsultaPublicaDTO(ResultadosTamizaje resultado) {
         this.idRegistro = String.valueOf(resultado.getTamizaje().getId());
-        this.semaforoGlobal = resultado.getSemaforo_global() == null
-                ? "SIN_CLASIFICAR" : resultado.getSemaforo_global().name();
+        cent35.models.Tamizaje tamizaje = resultado.getTamizaje();
+        cent35.models.enums.SemaforoGlobal estadoActual = tamizaje == null
+                ? resultado.getSemaforo_global()
+                : tamizaje.calcularSemaforoGlobal(resultado.getPuntaje_findrisc());
+        this.semaforoGlobal = estadoActual == null ? "SIN_CLASIFICAR" : estadoActual.name();
+        this.promedioSemaforo = tamizaje == null ? 0
+                : tamizaje.calcularPromedioSemaforo(resultado.getPuntaje_findrisc());
         this.derivacionInmediata = resultado.isDerivacionInmediata();
-        this.deriva = resultado.isDeriva();
+        this.deriva = resultado.isDeriva() || tamizaje != null
+                && (tamizaje.requiereDerivacion(resultado.getPuntaje_findrisc()) || resultado.isDerivacionInmediata());
         this.categoriaFindrisc = resultado.getCategoria_findrisc();
         this.semaforoImc = resultado.getSemaforo_imc();
         this.semaforoPresion = resultado.getSemaforo_presion();
         this.riesgoCardiovascular = resultado.getRiesgo_cv();
         this.semaforoRiesgoCardiovascular = resultado.getSemaforo_riesgo_cv();
-        cent35.models.Tamizaje tamizaje = resultado.getTamizaje();
         cent35.models.Antropometria antropometria = tamizaje.getAntropometria();
         this.valorImc = antropometria == null || !antropometria.validar() ? null
                 : String.format(java.util.Locale.ROOT, "%.1f", antropometria.calcularIMC());
@@ -55,6 +61,7 @@ public class ConsultaPublicaDTO {
 
     public String getIdRegistro() { return idRegistro; }
     public String getSemaforoGlobal() { return semaforoGlobal; }
+    public double getPromedioSemaforo() { return promedioSemaforo; }
     public boolean isDerivacionInmediata() { return derivacionInmediata; }
     public boolean isDeriva() { return deriva; }
     public String getRecomendacion() { return recomendacion; }

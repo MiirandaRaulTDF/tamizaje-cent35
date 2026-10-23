@@ -26,6 +26,13 @@ function guidanceFor(signal, urgent) {
     whyTitle: "¿Por qué consultar?",
     why: "Algunos factores de riesgo pueden no producir síntomas. Un profesional puede interpretar tus resultados junto con tus antecedentes y ayudarte a decidir qué seguimiento necesitás.",
   };
+  if (signal === "NARANJA") return {
+    title: "Naranja · Conviene una evaluación profesional",
+    description: "El promedio de los indicadores muestra señales que conviene revisar.",
+    recommendation: "Consultá con un profesional para revisar las mediciones y definir el seguimiento adecuado.",
+    whyTitle: "¿Cómo se obtiene este color?",
+    why: "El color global promedia los controles disponibles. Las alertas rojas individuales y los criterios de atención inmediata se muestran por separado.",
+  };
   if (signal === "VERDE") return {
     title: "Verde · Resultado favorable",
     description: "No se detectaron alertas en los controles realizados.",
@@ -124,6 +131,20 @@ if (!token || !/^[a-f0-9]{32}$/i.test(token)) {
     const guidance = guidanceFor(result.semaforoGlobal, result.derivacionInmediata);
     status.textContent = guidance.title;
     status.dataset.signal = signal;
+    if (Number.isFinite(Number(result.promedioSemaforo))) {
+      const score = result.derivacionInmediata ? 3 : Number(result.promedioSemaforo);
+      const stops = [[0, 145, 76, 91], [.75, 60, 88, 86], [1, 32, 88, 85], [2, 10, 76, 82], [3, 0, 72, 75]];
+      const bounded = Math.min(3, Math.max(0, score));
+      const upper = stops.findIndex(([at]) => at >= bounded);
+      const [fromAt, fromHue, fromSat, fromLight] = stops[Math.max(0, upper - 1)];
+      const [toAt, toHue, toSat, toLight] = stops[Math.max(0, upper)];
+      const amount = toAt === fromAt ? 0 : (bounded - fromAt) / (toAt - fromAt);
+      const hue = Math.round(fromHue + (toHue - fromHue) * amount);
+      const saturation = Math.round(fromSat + (toSat - fromSat) * amount);
+      const lightness = Math.round(fromLight + (toLight - fromLight) * amount);
+      status.style.backgroundColor = `hsl(${hue} ${saturation}% ${lightness}%)`;
+      status.style.color = `hsl(${hue} ${Math.min(75, saturation)}% 27%)`;
+    }
     document.getElementById("public-status-description").textContent = guidance.description;
     document.getElementById("public-recommendation").textContent = guidance.recommendation;
     document.getElementById("public-why-title").textContent = guidance.whyTitle;

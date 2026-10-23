@@ -414,6 +414,7 @@
                       <p class="eyebrow">SEMÁFORO GLOBAL</p>
                       <div class="completion-traffic-light" aria-hidden="true">
                         <span class="completion-lamp" data-signal="ROJO" :class="{ active: directGlobalSignal === 'ROJO' }"></span>
+                        <span class="completion-lamp" data-signal="NARANJA" :class="{ active: directGlobalSignal === 'NARANJA' }"></span>
                         <span class="completion-lamp" data-signal="AMARILLO" :class="{ active: directGlobalSignal === 'AMARILLO' }"></span>
                         <span class="completion-lamp" data-signal="VERDE" :class="{ active: directGlobalSignal === 'VERDE' }"></span>
                       </div>
@@ -488,9 +489,10 @@
                       <div class="dashboard-breakdown dashboard-breakdown-inline"><div class="dashboard-breakdown-body">
                       <div class="dashboard-results-total"><span class="eyebrow">Resultados calculados:</span> <strong class="dashboard-breakdown-total">{{ loading ? "—" : dashboard?.totalConResultado ?? 0 }}</strong></div>
                       <div class="dashboard-signals">
+                        <span class="dashboard-signal referral">Derivaciones <strong>{{ loading ? "—" : dashboard?.derivaciones ?? 0 }}</strong></span>
                         <span class="dashboard-signal urgent">Derivación inmediata <strong>{{ loading ? "—" : dashboard?.derivacionesInmediatas ?? 0 }}</strong></span>
                       </div>
-                      <small class="muted">Resultados agrupados; no se muestran datos individuales.</small>
+                      <small class="muted">El color global promedia los indicadores disponibles; las derivaciones se cuentan por separado.</small>
                     </div></div>
                       <div class="dashboard-donut-layout">
                         <div class="dashboard-donut" :style="{ background: dashboardSignalChart }" role="img" :aria-label="dashboardSignalTotal + ' resultados clasificados por semáforo'">
@@ -499,6 +501,7 @@
                         <div class="dashboard-legend">
                           <div><span class="dashboard-legend-dot" data-signal="VERDE"></span><span>Verde</span><strong>{{ loading ? "—" : dashboard?.semaforoVerde ?? 0 }}</strong></div>
                           <div><span class="dashboard-legend-dot" data-signal="AMARILLO"></span><span>Amarillo</span><strong>{{ loading ? "—" : dashboard?.semaforoAmarillo ?? 0 }}</strong></div>
+                          <div><span class="dashboard-legend-dot" data-signal="NARANJA"></span><span>Naranja</span><strong>{{ loading ? "—" : dashboard?.semaforoNaranja ?? 0 }}</strong></div>
                           <div><span class="dashboard-legend-dot" data-signal="ROJO"></span><span>Rojo</span><strong>{{ loading ? "—" : dashboard?.semaforoRojo ?? 0 }}</strong></div>
                         </div>
                       </div>
@@ -1310,13 +1313,14 @@
                     aria-label="Informe de evaluación"
                   >
                     <div class="alert alert-info result-method">
-                      Puntaje orientativo adaptado: incorpora cintura y antecedentes familiares de diabetes, pero no pregunta por glucemia elevada previa. No se informa como FINDRISC formal ni como diagnóstico.
+                      El semáforo global promedia los controles disponibles. Las alertas rojas individuales y la presión de urgencia mantienen su recomendación propia. El puntaje orientativo adaptado incorpora cintura y antecedentes familiares de diabetes, pero no pregunta por glucemia elevada previa; no es FINDRISC formal ni un diagnóstico.
                     </div>
                     <div class="result-heading">
                       <h3>Evaluación integral</h3>
                       <span
                         class="badge status-badge"
                         :class="badgeClass(result.semaforoGlobal)"
+                        :style="signalStyle(result.promedioSemaforo)"
                         >{{ label(result.semaforoGlobal) }}</span
                       >
                     </div>
@@ -1356,7 +1360,7 @@
                       <div class="col-12 col-md-4">
                         <div class="stat card h-100">
                           <div class="card-body">
-                            <h4 class="stat-label">IMC y presión arterial</h4>
+                            <h4 class="stat-label">Controles y semáforos</h4>
                             <p class="mb-2">
                               IMC:
                               <span
@@ -1364,6 +1368,10 @@
                                 :class="badgeClass(result.semaforoImc)"
                                 >{{ label(result.semaforoImc) }}</span
                               >
+                            </p>
+                            <p class="mb-2">
+                              Cintura:
+                              <span class="badge status-badge" :class="badgeClass(result.semaforoCintura)">{{ label(result.semaforoCintura) }}</span>
                             </p>
                             <p class="mb-0">
                               Presión:

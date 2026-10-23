@@ -27,7 +27,9 @@ public class DashboardResumenService {
         long totalConResultado = 0;
         long verdes = 0;
         long amarillos = 0;
+        long naranjas = 0;
         long rojos = 0;
+        long derivaciones = 0;
         long urgentes = 0;
         double sumaEdad = 0;
         long cantidadEdad = 0;
@@ -63,15 +65,17 @@ public class DashboardResumenService {
             ResultadosTamizaje resultado = tamizaje.getResultados();
             if (resultado == null) continue;
             totalConResultado++;
-            SemaforoGlobal semaforo = resultado.getSemaforo_global();
+            SemaforoGlobal semaforo = tamizaje.calcularSemaforoGlobal(resultado.getPuntaje_findrisc());
             if (semaforo == SemaforoGlobal.VERDE) verdes++;
             else if (semaforo == SemaforoGlobal.AMARILLO) amarillos++;
+            else if (semaforo == SemaforoGlobal.NARANJA) naranjas++;
             else if (semaforo == SemaforoGlobal.ROJO) rojos++;
+            if (resultado.isDeriva() || tamizaje.requiereDerivacion(resultado.getPuntaje_findrisc())) derivaciones++;
             if (resultado.isDerivacionInmediata()) urgentes++;
         }
 
-        return new DashboardResumenDTO(registros.size(), totalConResultado, verdes, amarillos, rojos,
-                urgentes, promedio(sumaEdad, cantidadEdad), promedio(sumaImc, cantidadImc),
+        return new DashboardResumenDTO(registros.size(), totalConResultado, verdes, amarillos, naranjas, rojos,
+                derivaciones, urgentes, promedio(sumaEdad, cantidadEdad), promedio(sumaImc, cantidadImc),
                 promedio(sumaSistolica, cantidadPresion), promedio(sumaDiastolica, cantidadPresion));
     }
 

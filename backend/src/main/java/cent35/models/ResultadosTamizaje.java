@@ -100,15 +100,29 @@ public class ResultadosTamizaje {
     }
 
     public SemaforoGlobal calcularSemaforoGlobal() {
-        boolean rojo = esRojo(semaforo_imc) || esRojo(semaforo_presion)
-                || esRojo(categoria_findrisc) || esRojo(semaforo_riesgo_cv);
-        boolean amarillo = esAmarillo(semaforo_imc) || esAmarillo(semaforo_presion)
-                || esAmarillo(categoria_findrisc) || esAmarillo(semaforo_riesgo_cv);
-        semaforo_global = rojo ? SemaforoGlobal.ROJO
-                : amarillo ? SemaforoGlobal.AMARILLO : SemaforoGlobal.VERDE;
-        deriva = semaforo_global == SemaforoGlobal.ROJO || derivacionInmediata;
-        return semaforo_global;
+        if (tamizaje != null) {
+            return tamizaje.calcularSemaforoGlobal(puntaje_findrisc);
+        }
+        // Compatibilidad con objetos antiguos aún sin su ficha asociada.
+        int suma = 0;
+        int cantidad = 0;
+        for (String valor : new String[]{semaforo_imc, semaforo_cintura, semaforo_presion}) {
+            if (esVerde(valor)) { cantidad++; }
+            else if (esAmarillo(valor)) { suma++; cantidad++; }
+            else if (esRojo(valor)) { suma += 3; cantidad++; }
+        }
+        if (puntaje_findrisc >= 0) {
+            String categoria = normalizar(categoria_findrisc);
+            suma += "BAJO".equals(categoria) ? 0 : "LIGERAMENTE ELEVADO".equals(categoria) ? 1
+                    : "MODERADO".equals(categoria) ? 2 : 3;
+            cantidad++;
+        }
+        double promedio = cantidad == 0 ? 0 : (double) suma / cantidad;
+        return promedio >= 2 ? SemaforoGlobal.ROJO : promedio >= 1
+                ? SemaforoGlobal.NARANJA : promedio > 0 ? SemaforoGlobal.AMARILLO : SemaforoGlobal.VERDE;
     }
+
+    private boolean esVerde(String valor) { return "VERDE".equals(normalizar(valor)); }
 
     private boolean esRojo(String valor) {
         String normalizado = normalizar(valor);

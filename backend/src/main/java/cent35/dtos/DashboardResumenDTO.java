@@ -6,7 +6,9 @@ public class DashboardResumenDTO {
     private final long totalConResultado;
     private final long semaforoVerde;
     private final long semaforoAmarillo;
+    private final long semaforoNaranja;
     private final long semaforoRojo;
+    private final long derivaciones;
     private final long derivacionesInmediatas;
     private final Double edadPromedio;
     private final Double imcPromedio;
@@ -14,14 +16,17 @@ public class DashboardResumenDTO {
     private final Double diastolicaPromedio;
 
     public DashboardResumenDTO(long totalTamizajes, long totalConResultado,
-                               long semaforoVerde, long semaforoAmarillo, long semaforoRojo,
-                               long derivacionesInmediatas, Double edadPromedio, Double imcPromedio,
+                               long semaforoVerde, long semaforoAmarillo, long semaforoNaranja,
+                               long semaforoRojo, long derivaciones, long derivacionesInmediatas,
+                               Double edadPromedio, Double imcPromedio,
                                Double sistolicaPromedio, Double diastolicaPromedio) {
         this.totalTamizajes = totalTamizajes;
         this.totalConResultado = totalConResultado;
         this.semaforoVerde = semaforoVerde;
         this.semaforoAmarillo = semaforoAmarillo;
+        this.semaforoNaranja = semaforoNaranja;
         this.semaforoRojo = semaforoRojo;
+        this.derivaciones = derivaciones;
         this.derivacionesInmediatas = derivacionesInmediatas;
         this.edadPromedio = edadPromedio;
         this.imcPromedio = imcPromedio;
@@ -33,7 +38,9 @@ public class DashboardResumenDTO {
     public long getTotalConResultado() { return totalConResultado; }
     public long getSemaforoVerde() { return semaforoVerde; }
     public long getSemaforoAmarillo() { return semaforoAmarillo; }
+    public long getSemaforoNaranja() { return semaforoNaranja; }
     public long getSemaforoRojo() { return semaforoRojo; }
+    public long getDerivaciones() { return derivaciones; }
     public long getDerivacionesInmediatas() { return derivacionesInmediatas; }
     public Double getEdadPromedio() { return edadPromedio; }
     public Double getImcPromedio() { return imcPromedio; }

@@ -142,21 +142,46 @@ public class Tamizaje {
     }
 
     public SemaforoGlobal calcularSemaforoGlobal(Integer puntajeFindrisc) {
-        String imc = clasificarIMC();
-        String cintura = clasificarCintura();
-        String presion = clasificarPresion();
-
-        if ("ROJO".equals(imc) || "ROJO".equals(cintura) || "ROJO".equals(presion)
-                || puntajeFindrisc != null && puntajeFindrisc >= 15)
-            return SemaforoGlobal.ROJO;
-        if ("AMARILLO".equals(imc) || "AMARILLO".equals(cintura) || "AMARILLO".equals(presion)
-                || puntajeFindrisc != null && puntajeFindrisc >= 12)
-            return SemaforoGlobal.AMARILLO;
+        double promedio = calcularPromedioSemaforo(puntajeFindrisc);
+        if (promedio >= 2) return SemaforoGlobal.ROJO;
+        if (promedio >= 1) return SemaforoGlobal.NARANJA;
+        if (promedio > 0) return SemaforoGlobal.AMARILLO;
         return SemaforoGlobal.VERDE;
     }
 
+    public double calcularPromedioSemaforo(Integer puntajeFindrisc) {
+        double suma = 0;
+        int cantidad = 0;
+        int imc = nivelSemaforo(clasificarIMC());
+        int cintura = nivelSemaforo(clasificarCintura());
+        int presion = nivelSemaforo(clasificarPresion());
+        if (imc >= 0) { suma += imc; cantidad++; }
+        if (cintura >= 0) { suma += cintura; cantidad++; }
+        if (presion >= 0) { suma += presion; cantidad++; }
+
+        // El puntaje adaptado ya incorpora IMC y cintura, así que no se lo
+        // promedia como un cuarto indicador y se evita contar esos datos dos veces.
+        if (puntajeFindrisc != null) {
+            suma += puntajeFindrisc < 7 ? 0 : puntajeFindrisc <= 11 ? 1
+                    : puntajeFindrisc <= 14 ? 2 : 3;
+            cantidad++;
+        }
+        return cantidad == 0 ? 0 : suma / cantidad;
+    }
+
     public boolean requiereDerivacion(Integer puntajeFindrisc) {
-        return calcularSemaforoGlobal(puntajeFindrisc) == SemaforoGlobal.ROJO;
+        // El promedio sólo gradúa el indicador global. Una alerta roja en un
+        // control individual conserva su recomendación de consulta.
+        return "ROJO".equals(clasificarIMC()) || "ROJO".equals(clasificarCintura())
+                || "ROJO".equals(clasificarPresion())
+                || puntajeFindrisc != null && puntajeFindrisc >= 15;
+    }
+
+    private int nivelSemaforo(String valor) {
+        if ("VERDE".equals(valor)) return 0;
+        if ("AMARILLO".equals(valor)) return 1;
+        if ("ROJO".equals(valor)) return 3;
+        return -1;
     }
 
     public boolean requiereDerivacionInmediata() {
